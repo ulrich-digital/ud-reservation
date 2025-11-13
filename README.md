@@ -1,6 +1,6 @@
 # UD Plugin: Reservation
 
-Frontend-Reservierungssystem mit Tagesmenü-Integration („Suppentag“), Echtzeit-Synchronisation und optionalem Kiosk-Modus.
+Frontend-Reservierungssystem mit Tagesmenü-Integration („Suppentag“), Echtzeit-Synchronisation und Kiosk-Modus.
 Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vollständig Gutenberg- und REST-basiert.
 
 
@@ -8,19 +8,13 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
 ## Funktionen
 
 - **Gutenberg-Block „UD Reservation“**
-  Erzeugt ein modernes Frontend-Formular für Tisch- oder Menü-Reservationen mit Live-Validierung und REST-Anbindung.
+  Erzeugt ein modernes Frontend-Formular für Reservationen mit Live-Validierung und REST-Anbindung.
 
 - **Echtzeit-Kommunikation (Ably)**
   Reservationen, Auslastung und Tagesmenüs werden ohne Seiten-Reload aktualisiert.
 
-- **Suppentag-Verwaltung**
-  Backend-Metabox für Menübild und Beschreibung, REST-Endpunkte für den aktuellen Tag, Media-Uploader inklusive.
-
 - **Kiosk-Modus**
   Vollbildanzeige mit automatischer Rotation zwischen Menü-Bild und Reservationen.
-
-- **Produktions- und Verpflegungs-Ansicht**
-  Spezielle Bildschirme für Küche, Verkauf und Ausgabe mit Live-Status-Updates.
 
 - **Admin-Tools**
   - Übersicht aller Reservationen
@@ -29,15 +23,12 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
   - Zusätzliche Spalten (Datum, Personen, Status)
 
 - **REST-API**
-  - `/ud-reservation/v1/reservation` – Anlegen & Abrufen von Reservationen
   - `/ud-reservation/v1/soldout` – Ausverkauft-Status
   - `/ud-reservation/v1/soup` – Tagesmenü
 
 - **Technische Highlights**
   - Flatpickr mit deutscher Lokalisierung
-  - Toast-Benachrichtigungen ohne Inline-Styles
   - `@wordpress/scripts`-Build (Webpack 5, SCSS → CSS, ESNext)
-  - Komponenten mit `__next40pxDefaultSize` & `__nextHasNoMarginBottom`
   - FSE-kompatibel mit Theme `ulrichdigital_block_theme`
 
 
