@@ -54,6 +54,9 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
 ![Editor-Ansicht](./assets/ud-reservation_hinzufuegen.webp)
 *Reservationen im Frontend hinzufügen und bearbeiten.*
 
+![Editor-Ansicht](./assets/ud-reservation_statistik.webp)
+*Erfassung von Produktion, Lieferung und Verkauf.*
+
 ![Editor-Ansicht](./assets/ud-reservation_kiosk.webp)
 *Automatische Anzeige der aktuellen Reservationen und Tagesmenüs in Echtzeit.*
 
