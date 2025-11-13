@@ -76,7 +76,7 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
 - WordPress 6.7 oder neuer
 - PHP 8.0+
 - Aktives Theme: `ulrichdigital_block_theme`
-- (Optional) Ably-API-Key für Echtzeit-Übertragung
+- Ably-API-Key für Echtzeit-Übertragung
 
 ---
 
