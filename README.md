@@ -1,4 +1,4 @@
-# UD Reservation
+# UD Plugin: Reservation
 
 Frontend-Reservierungssystem mit Tagesmenü-Integration („Suppentag“), Echtzeit-Synchronisation und optionalem Kiosk-Modus.
 Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vollständig Gutenberg- und REST-basiert.
