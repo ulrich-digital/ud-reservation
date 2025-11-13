@@ -46,7 +46,7 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
 ## Screenshots
 
 ![Frontend-Ansicht](./assets/ud-reservation.webp)
-*Illustration: Eine Mitarbeiterin an der Rezeption verwaltet digitale Reservationen direkt am Tablet. Die Anzeige im Hintergrund zeigt den aktuellen Buchungsstatus in Echtzeit*
+*Eine Mitarbeiterin an der Rezeption verwaltet digitale Reservationen direkt am Tablet. Die Anzeige im Hintergrund zeigt den aktuellen Buchungsstatus in Echtzeit.*
 
 ![Editor-Ansicht](./assets/ud-reservation_hinzufuegen.webp)
 *Reservationen im Frontend hinzufügen und bearbeiten.*
