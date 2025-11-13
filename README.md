@@ -3,7 +3,7 @@
 Frontend-Reservierungssystem mit Tagesmenü-Integration („Suppentag“), Echtzeit-Synchronisation und optionalem Kiosk-Modus.
 Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vollständig Gutenberg- und REST-basiert.
 
----
+
 
 ## Funktionen
 
@@ -40,7 +40,7 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
   - Komponenten mit `__next40pxDefaultSize` & `__nextHasNoMarginBottom`
   - FSE-kompatibel mit Theme `ulrichdigital_block_theme`
 
----
+
 
 
 ## Screenshots
@@ -61,7 +61,7 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
 *Automatische Anzeige der aktuellen Reservationen und Tagesmenüs in Echtzeit.*
 
 
----
+
 
 ## Installation
 
@@ -72,7 +72,7 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
 4. Suppentags-Informationen im Backend hinterlegen (Bild, Beschreibung, Status).
 5. Optional: Kiosk- oder Produktions-Ansicht über eigene Seiten/Shortcodes einbinden.
 
----
+
 
 ## Anforderungen
 
@@ -81,13 +81,13 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
 - Aktives Theme: `ulrichdigital_block_theme`
 - Ably-API-Key für Echtzeit-Übertragung
 
----
+
 
 ## Autor
 
 [ulrich.digital gmbh](https://ulrich.digital)
 
----
+
 
 ## Lizenz
 
