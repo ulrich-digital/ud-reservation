@@ -1,0 +1,106 @@
+/*!***********************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[2].use[2]!./src/css/verpflegung.scss ***!
+  \***********************************************************************************************************************************************/
+@charset "UTF-8";
+/* ---------- Karten für Znüni / Mittag ---------- */
+.verpflegung-group {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem 1.1rem 1.2rem;
+  margin-bottom: 1rem;
+  /* Titel der Karte */
+}
+.verpflegung-group h4 {
+  margin: 0 0 0.8rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #007cba;
+}
+.verpflegung-group {
+  /* 2-Spalten-Grid: Kinder | Erwachsene */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto; /* Reihe 1: Labels, Reihe 2: Inputs */
+  gap: 0.6rem 1rem;
+  /* Labels stehen über den Inputs */
+}
+.verpflegung-group label {
+  display: block;
+  font-size: 0.95rem;
+  color: #3c434a;
+  margin: 0; /* kein zusätzlicher Abstand nötig */
+}
+.verpflegung-group input[type=number] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #c3c4c7;
+  border-radius: 6px;
+  font-size: 1rem;
+  text-align: right;
+  background: #fff;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.verpflegung-group input[type=number]:focus {
+  outline: none;
+}
+.verpflegung-group {
+  /* --- präzises Grid-Mapping ohne HTML-Änderung --- */
+  /* Znüni */
+}
+.verpflegung-group label[for=zn-kinder] {
+  grid-column: 1;
+  grid-row: 1;
+}
+.verpflegung-group #zn-kinder {
+  grid-column: 1;
+  grid-row: 2;
+}
+.verpflegung-group label[for=zn-erwachsene] {
+  grid-column: 2;
+  grid-row: 1;
+}
+.verpflegung-group #zn-erwachsene {
+  grid-column: 2;
+  grid-row: 2;
+}
+.verpflegung-group {
+  /* Mittag */
+}
+.verpflegung-group label[for=mi-kinder] {
+  grid-column: 1;
+  grid-row: 1;
+}
+.verpflegung-group #mi-kinder {
+  grid-column: 1;
+  grid-row: 2;
+}
+.verpflegung-group label[for=mi-erwachsene] {
+  grid-column: 2;
+  grid-row: 1;
+}
+.verpflegung-group #mi-erwachsene {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* ---------- Footer-Buttons ---------- */
+#ud-verpflegung-form .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.2rem;
+}
+
+/* ---------- Responsiv: unter 480px einspaltig ---------- */
+@media (max-width: 480px) {
+  .verpflegung-group {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto; /* Label/Input nacheinander */
+    /* Reihenfolge passt automatisch, da jede Label/Input-Kombi einzeln läuft */
+  }
+  .verpflegung-group label[for=zn-erwachsene], .verpflegung-group label[for=mi-erwachsene] {
+    margin-top: 0.4rem;
+  }
+}

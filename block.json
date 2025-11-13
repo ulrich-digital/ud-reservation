@@ -1,0 +1,20 @@
+{
+  "$schema": "https://schemas.wp.org/trunk/block.json",
+  "apiVersion": 3,
+  "name": "ud/reservation",
+  "title": "UD Reservation",
+  "category": "widgets",
+  "icon": "calendar-alt",
+  "description": "Frontend-Reservierungen mit Login-Pflicht und Echtzeit-Aktualisierung.",
+  "keywords": ["reservation", "suppenanstalt", "frontend"],
+  "version": "1.0.0",
+  "textdomain": "ud-reservation-ud",
+  "editorScript": "file:./build/edit.js",
+  "editorStyle": "file:./build/editor.css",
+  "style": "file:./build/frontend.css",
+  "script": "file:./build/frontend.js",
+  "supports": {
+    "html": false,
+    "align": false
+  }
+}

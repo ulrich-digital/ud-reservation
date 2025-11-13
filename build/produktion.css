@@ -1,0 +1,193 @@
+/*!******************************************************************************************************************************************************!*\
+  !*** css ./node_modules/css-loader/dist/cjs.js!./node_modules/sass-loader/dist/cjs.js??ruleSet[1].rules[2].use[2]!./src/css/produktion-verkauf.scss ***!
+  \******************************************************************************************************************************************************/
+@charset "UTF-8";
+/* ======================================================
+   🏭 Statistik: Produktion + Verkauf
+   Struktur:
+   - Button (gleiches Design wie bisher)
+   - Modal mit Tabelle
+   - Aktionen + Animationen
+====================================================== */
+/* === Button "Produktion + Verkauf" === */
+.ud-verpflegung-button {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.9rem 1.2rem;
+  border: 2px solid #0073aa;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+.ud-verpflegung-button:hover {
+  background: #f3f8fb;
+  transform: translateY(-1px);
+}
+.ud-verpflegung-button:active {
+  transform: scale(0.98);
+}
+.ud-verpflegung-button .ud-verpflegung-progress-ring {
+  width: 36px;
+  height: 36px;
+  position: relative;
+  flex-shrink: 0;
+}
+.ud-verpflegung-button .ud-verpflegung-progress-ring svg {
+  transform: rotate(-90deg);
+  width: 36px;
+  height: 36px;
+}
+.ud-verpflegung-button .ud-verpflegung-progress-ring circle.bg {
+  fill: none;
+  stroke: #eee;
+  stroke-width: 3;
+}
+.ud-verpflegung-button .ud-verpflegung-progress-ring circle.progress {
+  fill: none;
+  stroke: #0073aa;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
+}
+.ud-verpflegung-button .ud-verpflegung-button-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.ud-verpflegung-button .ud-verpflegung-button-content .progress-text {
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.2;
+}
+
+/* === Modal: Statistik Produktion + Verkauf === */
+.ud-verpflegung-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(3px);
+  animation: fadeIn 0.25s ease both;
+}
+.ud-verpflegung-modal[hidden] {
+  display: none;
+}
+.ud-verpflegung-modal .ud-produktion-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  animation: fadeBackdrop 0.25s ease both;
+}
+.ud-verpflegung-modal .ud-verpflegung-modal-content {
+  position: relative;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 14px;
+  width: 90%;
+  max-width: 800px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.25);
+  z-index: 2;
+  animation: scaleIn 0.25s ease both;
+}
+.ud-verpflegung-modal .ud-verpflegung-modal-content h3 {
+  margin-top: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 1.2rem;
+}
+.ud-verpflegung-modal .ud-produktion-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 1.6rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #666;
+  transition: color 0.2s ease;
+}
+.ud-verpflegung-modal .ud-produktion-modal-close:hover {
+  color: #000;
+}
+
+/* === Eingabe: Produktion gesamt === */
+.produktion-gesamt label {
+  display: block;
+}
+.produktion-gesamt input {
+  width: 200px;
+}
+
+/* === Tabelle === */
+.ud-produktion-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ud-produktion-table td input,
+.ud-produktion-table td select {
+  width: 100%;
+}
+.ud-produktion-table td button.remove {
+  cursor: pointer;
+}
+
+/* === Aktionen === */
+.ud-verpflegung-modal .actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.2rem;
+  gap: 1rem;
+}
+
+/* === Animationen === */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.ud-produktion-table .calc-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+  font-size: 1rem;
+  padding: 3px;
+  line-height: 1;
+  transition: color 0.2s, transform 0.1s;
+}
+
+.ud-produktion-table .calc-btn:hover {
+  color: #007cba;
+  transform: scale(1.15);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 1.5rem;
+}
+
+.right-actions {
+  display: flex;
+  gap: 8px;
+}

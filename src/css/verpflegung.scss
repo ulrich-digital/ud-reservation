@@ -1,0 +1,82 @@
+@use "variables" as v;
+
+
+
+
+/* ---------- Karten für Znüni / Mittag ---------- */
+.verpflegung-group {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem 1.1rem 1.2rem;
+  margin-bottom: 1rem;
+
+  /* Titel der Karte */
+  h4 {
+    margin: 0 0 .8rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #007cba;
+  }
+
+  /* 2-Spalten-Grid: Kinder | Erwachsene */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto; /* Reihe 1: Labels, Reihe 2: Inputs */
+  gap: .6rem 1rem;
+
+  /* Labels stehen über den Inputs */
+  label {
+    display: block;
+    font-size: .95rem;
+    color: #3c434a;
+    margin: 0; /* kein zusätzlicher Abstand nötig */
+  }
+
+  input[type="number"] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: .5rem .6rem;
+    border: 1px solid #c3c4c7;
+    border-radius: 6px;
+    font-size: 1rem;
+    text-align: right;
+    background: #fff;
+    transition: border-color .2s, box-shadow .2s;
+
+    &:focus {
+      outline: none;
+    }
+  }
+
+  /* --- präzises Grid-Mapping ohne HTML-Änderung --- */
+  /* Znüni */
+  label[for="zn-kinder"]       { grid-column: 1; grid-row: 1; }
+  #zn-kinder                   { grid-column: 1; grid-row: 2; }
+  label[for="zn-erwachsene"]   { grid-column: 2; grid-row: 1; }
+  #zn-erwachsene               { grid-column: 2; grid-row: 2; }
+
+  /* Mittag */
+  label[for="mi-kinder"]       { grid-column: 1; grid-row: 1; }
+  #mi-kinder                   { grid-column: 1; grid-row: 2; }
+  label[for="mi-erwachsene"]   { grid-column: 2; grid-row: 1; }
+  #mi-erwachsene               { grid-column: 2; grid-row: 2; }
+}
+
+/* ---------- Footer-Buttons ---------- */
+#ud-verpflegung-form .actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .6rem;
+  margin-top: 1.2rem;
+}
+
+/* ---------- Responsiv: unter 480px einspaltig ---------- */
+@media (max-width: 480px) {
+  .verpflegung-group {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto auto; /* Label/Input nacheinander */
+    /* Reihenfolge passt automatisch, da jede Label/Input-Kombi einzeln läuft */
+    label[for="zn-erwachsene"], label[for="mi-erwachsene"] { margin-top: .4rem; }
+  }
+}

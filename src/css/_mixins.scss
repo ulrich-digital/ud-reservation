@@ -1,0 +1,19 @@
+// =========================================
+// Mixins
+// =========================================
+
+@mixin flex-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+@mixin status-badge($color) {
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  border-radius: $radius;
+  background-color: $color;
+  color: #fff;
+  font-size: 0.85em;
+  font-weight: 600;
+}

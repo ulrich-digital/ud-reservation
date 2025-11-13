@@ -1,0 +1,452 @@
+@use "variables" as v;
+
+#ud-reservation-form-root {
+	background: #fff;
+	border-radius: 2rem;
+	padding: 4rem;
+}
+
+// =============================================
+// Header
+// =============================================
+.ud-res-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 1rem;
+
+	h2 {
+		font-size: 1.5rem;
+		font-weight: 600;
+		color: #222;
+		margin: 0;
+	}
+
+	.ud-res-controls {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+}
+
+.toggle-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	cursor: pointer;
+	user-select: none;
+	position: relative;
+
+	input {
+		display: none;
+	}
+
+	.toggle-slider {
+		width: 38px;
+		height: 20px;
+		background: #ccc;
+		border-radius: 20px;
+		position: relative;
+		transition: background 0.3s;
+
+		&::before {
+			content: "";
+			position: absolute;
+			top: 2px;
+			left: 2px;
+			width: 16px;
+			height: 16px;
+			background: #fff;
+			border-radius: 50%;
+			transition: transform 0.3s;
+		}
+	}
+
+	input:checked + .toggle-slider {
+		background: #4caf50;
+	}
+
+	input:checked + .toggle-slider::before {
+		transform: translateX(18px);
+	}
+
+	.toggle-label {
+		font-size: 0.95rem;
+		color: #555;
+	}
+}
+
+.add-btn {
+	color: #fff;
+	padding: 0.6em 1.2em;
+	border: none;
+	border-radius: 6px;
+	cursor: pointer;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+
+	&.is-disabled {
+		cursor: not-allowed;
+	}
+
+	i {
+		font-size: 1rem;
+	}
+}
+
+// =============================================
+// Datumsauswahl
+// =============================================
+.ud-res-date {
+	display: flex;
+	align-items: center;
+	gap: 1em;
+
+	input[type="date"] {
+		padding: 0.4em 0.6em;
+		border: 1px solid #ccc;
+		border-radius: 4px;
+		cursor: pointer;
+		font-size: 0.95rem;
+		margin: 0;
+	}
+
+	#reservation-date-label {
+		font-weight: 500;
+		color: #333;
+	}
+}
+
+// =============================================
+// Modal (Bearbeiten/Hinzufügen)
+// =============================================
+
+.ud-modal-content {
+	background: #fff;
+	padding: 2em;
+	border-radius: 10px;
+	width: 100%;
+	max-width: 400px;
+	box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+
+	form {
+		display: flex;
+		flex-direction: column;
+		gap: 0.8em;
+
+		input[type="text"],
+		input[type="number"],
+		input[type="time"] {
+			width: 100%;
+			padding: 0.5em 0.6em;
+			border: 1px solid #bbb;
+			border-radius: 4px;
+			font-size: 0.95rem;
+			margin: 0;
+		}
+	}
+}
+
+// =============================================
+// Reservationsliste
+// =============================================
+.ud-res-list-flex {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	margin-top: 1rem;
+}
+
+.ud-res-item {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+	flex-wrap: wrap;
+
+	.fa-solid,
+	.fa-regular {
+		margin-right: 0.4rem;
+	}
+}
+
+.ud-res-name {
+	flex: 1 1 160px;
+	font-weight: 600;
+	color: #333;
+	display: flex;
+	align-items: center;
+	gap: 0.3rem;
+}
+
+.ud-res-meta {
+	display: flex;
+	align-items: center;
+	gap: 1rem;
+	color: #666;
+	font-size: 0.95rem;
+	flex: 2;
+
+	span {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+	}
+}
+
+.ud-res-status {
+	text-transform: lowercase;
+	font-weight: 600;
+	color: #888;
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	font-size: 0.9rem;
+
+	&.is-present {
+		color: #2e8b57;
+	}
+
+	.text-green {
+		color: #2e8b57;
+	}
+
+	.text-gray {
+		color: #999;
+	}
+}
+
+// =============================================
+// Login-Hinweis
+// =============================================
+.ud-res-login-hint {
+	background: #fff3cd;
+	border: 1px solid #ffeeba;
+	border-radius: 8px;
+	padding: 1.2rem;
+	text-align: center;
+	color: #856404;
+	font-weight: 500;
+
+	.login-link {
+		display: inline-block;
+		margin-top: 0.8rem;
+		background: #3ca85c;
+		color: #fff;
+		padding: 0.5rem 1rem;
+		border-radius: 6px;
+		text-decoration: none;
+
+		&:hover {
+			background: #2f8a49;
+		}
+	}
+}
+
+// =============================================
+// Edit-Button
+// =============================================
+.ud-res-item .edit {
+	background: none;
+	border: none;
+	cursor: pointer;
+	font-size: 1.1rem;
+	color: #555;
+	padding: 0.3rem;
+	border-radius: 6px;
+	transition: background 0.2s, transform 0.15s;
+
+	&:hover {
+		background: rgba(0, 0, 0, 0.07);
+		transform: scale(1.05);
+	}
+}
+
+// =============================================
+// Ajax-Login
+// =============================================
+#ud-login-modal {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.55);
+	z-index: 2000;
+
+	&.hidden {
+		display: none;
+	}
+}
+
+label.ud-checkbox {
+	display: flex;
+	justify-content: flex-start !important;
+	align-items: center;
+	gap: 1rem;
+	flex-direction: row !important;
+
+	input[type="checkbox"] {
+		width: 1rem;
+		height: 1rem;
+		transform: scale(1.3);
+		accent-color: #3ca85c;
+		cursor: pointer;
+		margin: 0;
+	}
+}
+
+.ud-login-box {
+	background: #fff;
+	padding: 2rem;
+	border-radius: 10px;
+	width: 100%;
+	max-width: 360px;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+	position: relative;
+	text-align: center;
+
+	h3 {
+		margin-bottom: 1rem;
+		color: #333;
+	}
+
+	label {
+		display: block;
+		margin: 0.8rem 0;
+		text-align: left;
+		font-weight: 500;
+	}
+
+	input {
+		width: 100%;
+		padding: 0.5rem;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		margin: 0;
+	}
+
+	.login-btn {
+		background: #3ca85c;
+		color: #fff;
+		border: none;
+		border-radius: 6px;
+		padding: 0.6rem 1rem;
+		cursor: pointer;
+		width: 100%;
+		font-weight: 600;
+		margin-top: 1rem;
+
+		&:hover {
+			background: #2f8a49;
+		}
+	}
+
+	.close-btn {
+		position: absolute;
+		top: 0.8rem;
+		right: 0.8rem;
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 1.2rem;
+		color: #555;
+
+		&:hover {
+			color: #000;
+		}
+	}
+
+	#ud-login-message {
+		margin-top: 0.8rem;
+		color: #444;
+		font-size: 0.9rem;
+	}
+}
+
+.ud-error {
+	color: #d32f2f;
+	font-size: 0.85rem;
+	margin-top: 0.25rem;
+}
+
+.has-error {
+	border-color: #d32f2f !important;
+	background-color: #fff6f6;
+}
+
+// =============================================
+// 🏭 Produktion + Verkauf – Statistik-Button & Modal
+// =============================================
+
+.ud-produktion-button {
+	display: flex;
+	align-items: center;
+	gap: 0.8rem;
+
+	.ud-verpflegung-progress-ring {
+		width: 36px;
+		height: 36px;
+		position: relative;
+		flex-shrink: 0;
+
+		svg {
+			transform: rotate(-90deg);
+			width: 36px;
+			height: 36px;
+		}
+
+		circle.bg {
+			fill: none;
+			stroke: #eee;
+			stroke-width: 3;
+		}
+
+		circle.progress {
+			fill: none;
+			stroke: #0073aa;
+			stroke-width: 3;
+			stroke-linecap: round;
+			transition: stroke-dashoffset 0.4s ease, stroke 0.3s ease;
+		}
+	}
+
+	.ud-verpflegung-button-content {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
+
+		.progress-text {
+			font-size: 0.9rem;
+			color: #666;
+			line-height: 1.2;
+		}
+	}
+}
+
+// =============================================
+// 📋 Tabelle – Produktion + Verkauf
+// =============================================
+
+.ud-produktion-table {
+	width: 100%;
+	border-collapse: collapse;
+
+	th,
+	td {
+		text-align: left;
+	}
+
+	td select,
+	td input {
+		width: 100%;
+	}
+}
+
+.ud-error-global {
+	margin-top: 12px;
+	text-align: center;
+}
