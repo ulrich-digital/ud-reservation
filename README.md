@@ -57,7 +57,7 @@ Entwickelt für gastronomische Einrichtungen wie die Suppenanstalt Schwyz – vo
 ![Editor-Ansicht](./assets/ud-reservation_statistik.webp)
 *Erfassung von Produktion, Lieferung und Verkauf.*
 
-![Editor-Ansicht](./assets/ud-reservation_kiosk.webp)
+![Editor-Ansicht](./assets/ud-reservation_mockup.webp)
 *Automatische Anzeige der aktuellen Reservationen und Tagesmenüs in Echtzeit.*
 
 
