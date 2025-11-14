@@ -201,6 +201,38 @@ function renderProduktionForm(suppentagId, produktion, lieferanten, date) {
 		</div>
 	`;
 
+
+/* =============================================================== *\
+   Title
+\* =============================================================== */
+// nach dem Einfügen von produktionBody.innerHTML ausführen:
+const tableBody = produktionBody.querySelector(".ud-produktion-table tbody");
+
+// Funktion: Zeile hervorheben, wenn Lieferant = Suppenküche
+function updateSuppenkuecheRows() {
+	tableBody.querySelectorAll("tr").forEach((row) => {
+		const select = row.querySelector("select.lieferant");
+		if (!select) return;
+		if (select.value === "Suppenküche") {
+			row.classList.add("is-suppenkueche");
+		} else {
+			row.classList.remove("is-suppenkueche");
+		}
+	});
+}
+
+// Initial prüfen nach Rendern
+updateSuppenkuecheRows();
+
+// Auf Änderungen reagieren
+tableBody.addEventListener("change", (e) => {
+	if (e.target.matches("select.lieferant")) {
+		updateSuppenkuecheRows();
+	}
+});
+
+
+
 	const tbody = produktionBody.querySelector("tbody");
 
 	// ➕ Neue Zeile hinzufügen

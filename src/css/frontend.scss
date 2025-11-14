@@ -450,3 +450,12 @@ label.ud-checkbox {
 	margin-top: 12px;
 	text-align: center;
 }
+
+.is-suppenkueche {
+	.lieferung,
+	.retouren,
+.calc-btn {
+		opacity: 0;
+		pointer-events: none;
+	}
+}

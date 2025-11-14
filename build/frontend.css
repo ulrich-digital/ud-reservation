@@ -381,3 +381,10 @@ label.ud-checkbox input[type=checkbox] {
   margin-top: 12px;
   text-align: center;
 }
+
+.is-suppenkueche .lieferung,
+.is-suppenkueche .retouren,
+.is-suppenkueche .calc-btn {
+  opacity: 0;
+  pointer-events: none;
+}
