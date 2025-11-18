@@ -1,8 +1,10 @@
 import apiFetch from "@wordpress/api-fetch";
 import { ensureSuppentagExists } from "./helpers/suppentag";
+import {udConfirm}  from "./helpers/confirm";
 import "../css/produktion-verkauf.scss";
 
 console.log("[UD-Produktion] Modul geladen ✅");
+
 
 
 /* =====================================================
@@ -11,7 +13,9 @@ console.log("[UD-Produktion] Modul geladen ✅");
 const produktionBtn = document.getElementById("ud-start-produktion");
 const produktionModal = document.getElementById("ud-produktion-modal");
 const produktionBackdrop = produktionModal?.querySelector(".ud-modal-backdrop");
-const produktionClose = produktionModal?.querySelector(".ud-produktion-modal-close");
+const produktionClose = produktionModal?.querySelector(
+	".ud-produktion-modal-close"
+);
 const produktionBody = document.getElementById("ud-produktion-form");
 const produktionLoading = document.getElementById("ud-produktion-loading");
 
@@ -24,7 +28,9 @@ function updateProgressRing(lieferanten = []) {
 	const text = btn.querySelector(".progress-text");
 
 	const total = lieferanten.length;
-	const erledigt = lieferanten.filter((l) => Number(l.verkauf || 0) > 0).length;
+	const erledigt = lieferanten.filter(
+		(l) => Number(l.verkauf || 0) > 0
+	).length;
 
 	const percent = total > 0 ? (erledigt / total) * 100 : 0;
 	const radius = 16;
@@ -36,13 +42,20 @@ function updateProgressRing(lieferanten = []) {
 	text.textContent = `${erledigt} von ${total} erledigt`;
 }
 
-if (produktionBtn) {
 
+
+
+if (produktionBtn) {
 	// 🟢 Beim Laden der Seite sofort Fortschrittsring aktualisieren
 	(async () => {
 		try {
-			const dateInput = document.getElementById("reservation-date");
-			const date = dateInput?.value || new Date().toISOString().split("T")[0];
+			//const dateInput = document.getElementById("reservation-date");
+			const dateInput = document.getElementById(
+				"reservation-date-flatpickr"
+			);
+
+			const date =
+				dateInput?.value || new Date().toISOString().split("T")[0];
 
 			// Falls kein Suppentag existiert, wird er erstellt
 			const suppentagId = await ensureSuppentagExists(date);
@@ -51,20 +64,29 @@ if (produktionBtn) {
 				path: `/wp/v2/ud-suppentag/${suppentagId}?_=${Date.now()}`,
 			});
 
-			const lieferanten = Array.isArray(suppentag.meta?.suppentag_produktion)
+			const lieferanten = Array.isArray(
+				suppentag.meta?.suppentag_produktion
+			)
 				? suppentag.meta.suppentag_produktion
 				: [];
 
 			updateProgressRing(lieferanten);
-			console.log("[UD-Produktion] Fortschritt beim Seitenstart aktualisiert");
+			console.log(
+				"[UD-Produktion] Fortschritt beim Seitenstart aktualisiert"
+			);
 		} catch (err) {
-			console.warn("[UD-Produktion] Fortschritts-Init übersprungen:", err);
+			console.warn(
+				"[UD-Produktion] Fortschritts-Init übersprungen:",
+				err
+			);
 		}
 	})();
 
 	// 🖱 Klick-Event → Modal öffnen + Fortschritt erneut laden
 	produktionBtn.addEventListener("click", async () => {
-		const dateInput = document.getElementById("reservation-date");
+		//		const dateInput = document.getElementById("reservation-date");
+		const dateInput = document.getElementById("reservation-date-flatpickr");
+
 		const date = dateInput?.value || new Date().toISOString().split("T")[0];
 		console.log(`📅 Aktuell gewähltes Datum: ${date}`);
 
@@ -72,6 +94,7 @@ if (produktionBtn) {
 		produktionLoading.hidden = false;
 		produktionBody.hidden = true;
 		produktionBody.innerHTML = "";
+
 
 		try {
 			const suppentagId = await ensureSuppentagExists(date);
@@ -98,15 +121,70 @@ if (produktionBtn) {
 	});
 }
 
+/* =============================================================== *\
+   Title
+\* =============================================================== */
+
+document.addEventListener("DOMContentLoaded", () => {
+	const prodDateInput = document.getElementById("reservation-date-flatpickr");
+	if (!prodDateInput) {
+		console.warn("[UD-Produktion] Kein #reservation-date-flatpickr gefunden");
+		return;
+	}
+
+	prodDateInput.addEventListener("change", async () => {
+		const date = prodDateInput.value;
+		console.log("[UD-Produktion] ----> Datum geändert:", date);
+		if (!date) return;
+
+		try {
+			// Suppentag nur laden, nicht neu erstellen
+			const res = await fetch(`/wp-json/ud/v1/suppentag-by-date?date=${date}`);
+			const json = await res.json();
+
+			if (json?.id) {
+				const suppentag = await apiFetch({
+					path: `/wp/v2/ud-suppentag/${json.id}?_=${Date.now()}`,
+				});
+
+				const lieferanten = Array.isArray(suppentag.meta?.suppentag_produktion)
+					? suppentag.meta.suppentag_produktion
+					: [];
+				updateProgressRing(lieferanten);
+			} else {
+				// Kein Suppentag → Fortschritt auf 0 setzen
+				updateProgressRing([]);
+			}
+		} catch (err) {
+			console.error("[UD-Produktion] Fehler beim Aktualisieren nach Datumwechsel:", err);
+		}
+	});
+});
+
+
 /* =====================================================
    🧱 Formularaufbau
 ===================================================== */
 function renderProduktionForm(suppentagId, produktion, lieferanten, date) {
-	const defaultLieferanten = ["Reichmuth", "Lüönd", "Schuler", "Spar", "Roman", "Suppenküche"];
+produktionModal.udProduktionData = {
+    suppentagId,
+    date
+};
+	const defaultLieferanten = [
+		"Reichmuth",
+		"Lüönd",
+		"Schuler",
+		"Spar",
+		"Roman",
+		"Suppenküche",
+	];
 
 	const d = new Date(date);
 	const wochentage = ["So.", "Mo.", "Di.", "Mi.", "Do.", "Fr.", "Sa."];
-	const formattedDate = `${wochentage[d.getDay()]} ${d.getDate().toString().padStart(2, "0")}.${(d.getMonth() + 1)
+	const formattedDate = `${wochentage[d.getDay()]} ${d
+		.getDate()
+		.toString()
+		.padStart(2, "0")}.${(d.getMonth() + 1)
 		.toString()
 		.padStart(2, "0")}.${d.getFullYear()}`;
 
@@ -142,32 +220,44 @@ function renderProduktionForm(suppentagId, produktion, lieferanten, date) {
 				</thead>
 				<tbody>
 					${lieferanten
-				.map(
-					(l) => `
+						.map(
+							(l) => `
 						<tr>
 							<td>
 								<select class="lieferant">
 									<option value="">– Lieferant wählen –</option>
 									${defaultLieferanten
-							.map(
-								(opt) =>
-									`<option value="${opt}" ${l.name === opt ? "selected" : ""}>${opt}</option>`
-							)
-							.join("")}
-									<option value="custom" ${l.name && !defaultLieferanten.includes(l.name)
-							? "selected"
-							: ""
-						}>Anderer Lieferant…</option>
+										.map(
+											(opt) =>
+												`<option value="${opt}" ${
+													l.name === opt
+														? "selected"
+														: ""
+												}>${opt}</option>`
+										)
+										.join("")}
+									<option value="custom" ${
+										l.name &&
+										!defaultLieferanten.includes(l.name)
+											? "selected"
+											: ""
+									}>Anderer Lieferant…</option>
 								</select>
 								<input type="text" class="custom-lieferant" placeholder="Name eingeben"
 									value="${!defaultLieferanten.includes(l.name) ? l.name || "" : ""}"
-									style="${!defaultLieferanten.includes(l.name) && l.name
-							? "display:block"
-							: "display:none"
-						}; margin-top:4px;">
+									style="${
+										!defaultLieferanten.includes(l.name) &&
+										l.name
+											? "display:block"
+											: "display:none"
+									}; margin-top:4px;">
 							</td>
-							<td><input type="number" class="lieferung" value="${l.lieferung || 0}" min="0"></td>
-							<td><input type="number" class="retouren" value="${l.retouren || 0}" min="0"></td>
+							<td><input type="number" class="lieferung" value="${
+								l.lieferung || 0
+							}" min="0"></td>
+							<td><input type="number" class="retouren" value="${
+								l.retouren || 0
+							}" min="0"></td>
 							<td class="verkauf-cell">
 								<button type="button" class="calc-btn" title="Berechnen (Lieferung - Retouren)">
 									<i class="fa-solid fa-calculator"></i>
@@ -178,8 +268,8 @@ function renderProduktionForm(suppentagId, produktion, lieferanten, date) {
 <path d="M6.4 19L5 17.6L10.6 12L5 6.4L6.4 5L12 10.6L17.6 5L19 6.4L13.4 12L19 17.6L17.6 19L12 13.4L6.4 19Z" fill="#B2B2B2"></path>
 </svg></button></td>
 						</tr>`
-				)
-				.join("")}
+						)
+						.join("")}
 					<tr class="total-row">
 						<td class="total-label"><strong>Total</strong></td>
 						<td></td>
@@ -202,43 +292,50 @@ function renderProduktionForm(suppentagId, produktion, lieferanten, date) {
 	`;
 
 
-/* =============================================================== *\
+// Originalzustand speichern
+produktionModal.dataset.originalState = JSON.stringify({
+    produktion,
+    lieferanten
+});
+	/* =============================================================== *\
    Title
 \* =============================================================== */
-// nach dem Einfügen von produktionBody.innerHTML ausführen:
-const tableBody = produktionBody.querySelector(".ud-produktion-table tbody");
+	// nach dem Einfügen von produktionBody.innerHTML ausführen:
+	const tableBody = produktionBody.querySelector(
+		".ud-produktion-table tbody"
+	);
 
-// Funktion: Zeile hervorheben, wenn Lieferant = Suppenküche
-function updateSuppenkuecheRows() {
-	tableBody.querySelectorAll("tr").forEach((row) => {
-		const select = row.querySelector("select.lieferant");
-		if (!select) return;
-		if (select.value === "Suppenküche") {
-			row.classList.add("is-suppenkueche");
-		} else {
-			row.classList.remove("is-suppenkueche");
+	// Funktion: Zeile hervorheben, wenn Lieferant = Suppenküche
+	function updateSuppenkuecheRows() {
+		tableBody.querySelectorAll("tr").forEach((row) => {
+			const select = row.querySelector("select.lieferant");
+			if (!select) return;
+			if (select.value === "Suppenküche") {
+				row.classList.add("is-suppenkueche");
+			} else {
+				row.classList.remove("is-suppenkueche");
+			}
+		});
+	}
+
+	// Initial prüfen nach Rendern
+	updateSuppenkuecheRows();
+
+	// Auf Änderungen reagieren
+	tableBody.addEventListener("change", (e) => {
+		if (e.target.matches("select.lieferant")) {
+			updateSuppenkuecheRows();
 		}
 	});
-}
-
-// Initial prüfen nach Rendern
-updateSuppenkuecheRows();
-
-// Auf Änderungen reagieren
-tableBody.addEventListener("change", (e) => {
-	if (e.target.matches("select.lieferant")) {
-		updateSuppenkuecheRows();
-	}
-});
-
-
 
 	const tbody = produktionBody.querySelector("tbody");
 
 	// ➕ Neue Zeile hinzufügen
-	produktionBody.querySelector("#add-lieferant").addEventListener("click", () => {
-		const newRow = document.createElement("tr");
-		newRow.innerHTML = `
+	produktionBody
+		.querySelector("#add-lieferant")
+		.addEventListener("click", () => {
+			const newRow = document.createElement("tr");
+			newRow.innerHTML = `
 			<td>
 				<select class="lieferant">
 					<option value="">– Lieferant wählen –</option>
@@ -257,17 +354,21 @@ tableBody.addEventListener("change", (e) => {
 			</td>
 			<td><button class="remove">✕</button></td>
 		`;
-		tbody.insertBefore(newRow, tbody.querySelector(".total-row"));
-		updateProduktionTotals();
-		updateProgressRing(collectProduktionData());
-	});
+			tbody.insertBefore(newRow, tbody.querySelector(".total-row"));
+			updateProduktionTotals();
+			updateProgressRing(collectProduktionData());
+		});
 
 	// 🔢 Taschenrechner-Klick → Berechnen
 	tbody.addEventListener("click", (e) => {
 		if (e.target.closest(".calc-btn")) {
 			const row = e.target.closest("tr");
-			const lieferung = parseFloat(row.querySelector(".lieferung").value || 0);
-			const retouren = parseFloat(row.querySelector(".retouren").value || 0);
+			const lieferung = parseFloat(
+				row.querySelector(".lieferung").value || 0
+			);
+			const retouren = parseFloat(
+				row.querySelector(".retouren").value || 0
+			);
 			const verkaufField = row.querySelector(".verkauf");
 			verkaufField.value = Math.max(lieferung - retouren, 0).toFixed(1);
 			updateProduktionTotals();
@@ -286,31 +387,48 @@ tableBody.addEventListener("change", (e) => {
 		updateProgressRing(collectProduktionData());
 	});
 
-	produktionBody.querySelector("#cancel-produktion").addEventListener("click", () => {
-		produktionModal.hidden = true;
-	});
+produktionBody
+    .querySelector("#cancel-produktion")
+    .addEventListener("click", () => {
+        if (hasUnsavedProduktionChanges()) {
+            confirmProduktionClose();
+        } else {
+            produktionModal.hidden = true;
+            document.body.style.overflow = "";
+        }
+    });
 
-	produktionBody.querySelector("#save-produktion").addEventListener("click", async () => {
-		const data = collectProduktionData();
-		const produktionGesamt = Number(document.getElementById("produktion-gesamt")?.value || 0);
 
-		try {
-			await apiFetch({
-				path: `/wp/v2/ud-suppentag/${suppentagId}`,
-				method: "POST",
-				data: {
-					meta: {
-						produktion_gesamt: produktionGesamt,
-						suppentag_produktion: data,
+
+	produktionBody
+		.querySelector("#save-produktion")
+		.addEventListener("click", async () => {
+			const data = collectProduktionData();
+			const produktionGesamt = Number(
+				document.getElementById("produktion-gesamt")?.value || 0
+			);
+
+			try {
+				await apiFetch({
+					path: `/wp/v2/ud-suppentag/${suppentagId}`,
+					method: "POST",
+					data: {
+						meta: {
+							produktion_gesamt: produktionGesamt,
+							suppentag_produktion: data,
+						},
 					},
-				},
-			});
-			updateProgressRing(data);
-			produktionModal.hidden = true;
-		} catch (err) {
-			console.error("[UD-Produktion] Fehler beim Speichern:", err);
-		}
-	});
+				});
+
+            showToast("Produktion gespeichert!");   // ← HIER EINFÜGEN ✔
+				updateProgressRing(data);
+				produktionModal.hidden = true;
+			} catch (err) {
+				console.error("[UD-Produktion] Fehler beim Speichern:", err);
+            showToast("Fehler beim Speichern!", true);   // ← optional
+
+			}
+		});
 
 	updateProduktionTotals();
 	updateProgressRing(lieferanten);
@@ -320,14 +438,23 @@ tableBody.addEventListener("change", (e) => {
    🔢 Hilfsfunktionen
 ===================================================== */
 function collectProduktionData() {
-	const rows = [...document.querySelectorAll(".ud-produktion-table tbody tr:not(.total-row)")];
+	const rows = [
+		...document.querySelectorAll(
+			".ud-produktion-table tbody tr:not(.total-row)"
+		),
+	];
 	return rows.map((r) => {
 		const select = r.querySelector(".lieferant");
 		const custom = r.querySelector(".custom-lieferant");
-		const name = select.value === "custom" ? custom.value.trim() : select.value.trim();
+		const name =
+			select.value === "custom"
+				? custom.value.trim()
+				: select.value.trim();
 		const lieferung = Number(r.querySelector(".lieferung").value) || 0;
 		const retouren = Number(r.querySelector(".retouren").value) || 0;
-		const verkauf = Number(r.querySelector(".verkauf").value) || Math.max(lieferung - retouren, 0);
+		const verkauf =
+			Number(r.querySelector(".verkauf").value) ||
+			Math.max(lieferung - retouren, 0);
 		return { name, lieferung, retouren, verkauf };
 	});
 }
@@ -336,12 +463,149 @@ function updateProduktionTotals() {
 	const data = collectProduktionData();
 	const totalRetouren = data.reduce((s, l) => s + (l.retouren || 0), 0);
 	const totalVerkauf = data.reduce((s, l) => s + (l.verkauf || 0), 0);
-	document.querySelector(".total-retouren strong").textContent = `${totalRetouren.toFixed(1)} l`;
-	document.querySelector(".total-verkauf strong").textContent = `${totalVerkauf.toFixed(1)} l`;
+	document.querySelector(
+		".total-retouren strong"
+	).textContent = `${totalRetouren.toFixed(1)} l`;
+	document.querySelector(
+		".total-verkauf strong"
+	).textContent = `${totalVerkauf.toFixed(1)} l`;
 }
+
+function showToast(msg, isError = false) {
+    const toast = document.createElement("div");
+    toast.className =
+        "ud-toast" + (isError ? " ud-toast--error" : " ud-toast--success");
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add("ud-toast--visible");
+    }, 10);
+
+    setTimeout(() => {
+        toast.classList.remove("ud-toast--visible");
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+}
+
+
+
+
+
+
+/* =====================================================
+   🔍 State-Snapshot (für Änderungsprüfung)
+===================================================== */
+function hasUnsavedProduktionChanges() {
+    const original = produktionModal.dataset.originalState;
+    if (!original) return false;
+
+    const current = JSON.stringify({
+        produktion: Number(document.getElementById("produktion-gesamt")?.value || 0),
+        lieferanten: collectProduktionData(),
+    });
+
+    return current !== original;
+}
+
+
+function collectProduktionDataState() {
+    return {
+        produktion: Number(document.getElementById("produktion-gesamt")?.value || 0),
+        lieferanten: collectProduktionData()
+    };
+}
+
+
+function confirmProduktionClose() {
+    const data = produktionModal.udProduktionData;
+
+    if (!data) {
+        console.error("❌ confirmProduktionClose: keine Modal-Daten gefunden");
+        produktionModal.hidden = true;
+        return;
+    }
+
+    const { suppentagId, date } = data;
+
+    udConfirm(
+        "Du hast Änderungen vorgenommen. Möchtest du speichern?",
+        "Änderungen vorhanden",
+        {
+				okLabel: "Speichern",
+				cancelLabel: "Nicht speichern",
+            onSave: async () => {
+                // Daten aus dem Formular einsammeln
+                const lieferanten = collectProduktionData();
+                const produktionGesamt = Number(
+                    document.getElementById("produktion-gesamt")?.value || 0
+                );
+
+                try {
+                    await apiFetch({
+                        path: `/wp/v2/ud-suppentag/${suppentagId}`,
+                        method: "POST",
+                        data: {
+                            meta: {
+                                produktion_gesamt: produktionGesamt,
+                                suppentag_produktion: lieferanten,
+                            },
+                        },
+                    });
+
+                    showToast("Produktion gespeichert!");
+                } catch (err) {
+                    console.error("[UD-Produktion] Fehler beim Speichern:", err);
+                    showToast("Fehler beim Speichern!", true);
+                }
+
+                produktionModal.hidden = true;
+                document.body.style.overflow = "";
+            },
+
+            onDiscard: () => {
+                produktionModal.hidden = true;
+                document.body.style.overflow = "";
+            }
+        }
+    );
+}
+
+
 
 /* =====================================================
    ❌ Modal schließen
 ===================================================== */
-produktionClose?.addEventListener("click", () => (produktionModal.hidden = true));
-produktionBackdrop?.addEventListener("click", () => (produktionModal.hidden = true));
+function tryCloseProduktionModal() {
+    if (hasUnsavedProduktionChanges()) {
+        confirmProduktionClose();
+    } else {
+        produktionModal.hidden = true;
+        document.body.style.overflow = "";
+    }
+}
+
+
+
+produktionClose?.addEventListener("click", () => {
+    if (hasUnsavedProduktionChanges()) {
+        confirmProduktionClose();
+    } else {
+        produktionModal.hidden = true;
+        document.body.style.overflow = "";
+    }
+});
+
+produktionBackdrop?.addEventListener("click", () => {
+    if (hasUnsavedProduktionChanges()) {
+        confirmProduktionClose();
+    } else {
+        produktionModal.hidden = true;
+        document.body.style.overflow = "";
+    }
+});
+
+// Abbrechen-Button
+produktionBody
+    .querySelector("#cancel-produktion")
+    ?.addEventListener("click", tryCloseProduktionModal);

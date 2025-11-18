@@ -7,6 +7,7 @@ import iconEdit from "../assets/icons/edit.svg";
 import iconCalendar from "../assets/icons/calendar.svg";
 import iconClose from "../assets/icons/close.svg";
 //import flatpickr from  "../assets/vendor/flatpickr/flatpickr.min.js";
+import { udConfirm } from "./helpers/confirm";
 
 console.log("[UD-Reservation] frontend.js geladen ✅");
 
@@ -66,7 +67,11 @@ if (window.udReservationSettings?.nonce) {
 /* =====================================================
    🧠 Suppentag-Verknüpfung – zentrale Utility-Funktion
 ===================================================== */
-import { ensureSuppentagExists } from "./helpers/suppentag";
+import { ensureSuppentagExists, getSuppentagById } from "./helpers/suppentag";
+
+// =====================================================
+// 🔧 Suppentag → UI aktualisieren
+// =====================================================
 
 /* =====================================================
    🧩 Hauptlogik
@@ -231,13 +236,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			loadReservations();
 		});
 
-		// 🔸 3. Reservation aktualisiert → Liste neu laden
-		/*
-		window.ablyChannel.subscribe("reservation_update", (message) => {
-			console.log("📡 Ably: reservation_update →", message.data);
-			loadReservations();
-		});
-		*/
 		// 🔸 3. Reservation aktualisiert → Liste neu laden (andere Clients)
 		window.ablyChannel.subscribe("reservation_update", (message) => {
 			const senderId = message.data?.clientId;
@@ -259,31 +257,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	/* =====================================================
 	   📅 Datumsauswahl
 	===================================================== */
-	/*
-	const today = new Date();
-	datePicker.value = today.toISOString().split("T")[0];
-	updateDateLabel(today);
-	loadSoldoutState();
-
-	function updateDateLabel(dateObj) {
-		const options = {
-			weekday: "long",
-			day: "numeric",
-			month: "long",
-			year: "numeric",
-		};
-		dateLabel.textContent = dateObj.toLocaleDateString("de-CH", options);
-	}
-
-	datePicker.addEventListener("change", () => {
-		updateDateLabel(new Date(datePicker.value));
-		loadSoldoutState();
-		loadReservations();
-	});
-*/
-	/* =============================================================== *\
-   FlatPickr
-\* =============================================================== */
 
 	const fpInput = document.querySelector("#reservation-date-flatpickr");
 	const calendar_icon = document.querySelector(".calendar_icon");
@@ -305,9 +278,19 @@ document.addEventListener("DOMContentLoaded", () => {
 		disableMobile: true,
 		onChange(selectedDates, dateStr, instance) {
 			console.log("Neues Datum:", dateStr);
+			// 🔥 Suppentag sicherstellen
+			//ensureSuppentagExists(dateStr);
+
+			loadSoldoutState();
 			loadReservations();
 		},
 	});
+
+	// 🛠️ TECHNISCHES DATUM SICHERN (wichtig für reservation_datetime)
+	if (!fpInput.value) {
+		const d = fp.selectedDates?.[0] || new Date();
+		fpInput.value = d.toISOString().split("T")[0];
+	}
 
 	window.udReservationDatepicker = fp;
 	const fpDateValue = window.udReservationDatepicker.input.value;
@@ -410,48 +393,104 @@ document.addEventListener("DOMContentLoaded", () => {
 		} catch (error) {
 			list.innerHTML = `<p>Fehler: ${error.message}</p>`;
 		}
+	}
 
+	function reservationHasUnsavedChanges() {
+		const data = modal.udReservationData;
+		if (!data) return false;
 
+		const orig = data.original;
+
+		const curr = {
+			reservation_name: form
+				.querySelector('[name="reservation_name"]')
+				.value.trim(),
+			reservation_phone: form
+				.querySelector('[name="reservation_phone"]')
+				.value.trim(),
+			reservation_persons: form
+				.querySelector('[name="reservation_persons"]')
+				.value.trim(),
+			reservation_time:
+				document
+					.getElementById("reservation-time-flatpickr")
+					?.value.trim() || "",
+			reservation_menu: form
+				.querySelector('[name="reservation_menu"]')
+				.value.trim(),
+		};
+
+		return JSON.stringify(orig) !== JSON.stringify(curr);
+	}
+
+	function tryCloseReservationModal() {
+		if (!modal.udReservationData) {
+			modal.classList.add("hidden");
+			form.reset();
+			currentId = null;
+			return;
+		}
+
+		// Falls nichts geändert → sofort schliessen
+		if (!reservationHasUnsavedChanges()) {
+			modal.classList.add("hidden");
+			form.reset();
+			currentId = null;
+			return;
+		}
+
+		// 🔥 Änderungen vorhanden → Confirm öffnen
+		udConfirm(
+			"Du hast Änderungen vorgenommen. Möchtest du speichern?",
+			"Änderungen vorhanden",
+			{
+				okLabel: "Speichern",
+				cancelLabel: "Nicht speichern",
+
+				onSave: () => form.requestSubmit(),
+				onDiscard: () => {
+					modal.classList.add("hidden");
+					form.reset();
+					currentId = null;
+				},
+			}
+		);
 	}
 
 	/* =====================================================
 	   ✏️ Modal-Steuerung
 	===================================================== */
-	closeBtn.addEventListener("click", () => {
-		modal.classList.add("hidden");
-		form.reset();
-		currentId = null;
-	});
-
-	cancelBtn.addEventListener("click", () => {
-		modal.classList.add("hidden");
-		form.reset();
-		currentId = null;
-	});
 
 	addBtn.addEventListener("click", () => {
 		modal.classList.remove("hidden");
 		form.reset();
 		currentId = null;
+
+		modal.udReservationData = {
+			original: {
+				reservation_name: "",
+				reservation_phone: "",
+				reservation_persons: "",
+				reservation_time: "",
+				reservation_menu: "",
+			},
+			id: null,
+		};
+
 		document.getElementById("modal-title").textContent =
 			"Neue Reservation hinzufügen";
 
-		// 🔹 Delete-Button bei neuen Reservationen ausblenden
 		const deleteBtn = document.getElementById("reservation-delete");
 		if (deleteBtn) deleteBtn.classList.add("hidden");
 
-		// 🔹 Flatpickr-Zeitfeld nach Reset wieder befüllen
-		console.log("hier");
 		if (window.fpTimePicker) {
-			window.fpTimePicker.setDate("12:00", true); // Standardzeit oder letzter Wert
+			window.fpTimePicker.setDate("12:00", true);
 		}
 	});
 
-	backDrop.addEventListener("click", () => {
-		modal.classList.add("hidden");
-		form.reset();
-		currentId = null;
-	});
+	closeBtn.addEventListener("click", tryCloseReservationModal);
+	cancelBtn.addEventListener("click", tryCloseReservationModal);
+	backDrop.addEventListener("click", tryCloseReservationModal);
 
 	/* =====================================================
 	   🧾 Formular absenden (Validierung + Speichern)
@@ -500,6 +539,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		}
 
 		// 🔹 Meta-Daten vorbereiten
+		/*
 		const formData = new FormData(form);
 		const meta = {};
 		formData.forEach((v, k) => {
@@ -509,6 +549,30 @@ document.addEventListener("DOMContentLoaded", () => {
 		});
 
 		const selectedDate = fpInput.value; // dein Flatpickr-Datum
+		if (!selectedDate) {
+			const d = fp.selectedDates?.[0] || new Date();
+			selectedDate = d.toISOString().split("T")[0];
+		}
+
+		meta.reservation_time = selectedTime || "00:00";
+		meta.reservation_datetime = `${selectedDate}T${meta.reservation_time}:00`;
+
+*/
+		// 🔹 Meta-Daten vorbereiten
+		const formData = new FormData(form);
+		const meta = {};
+		formData.forEach((v, k) => {
+			const field = form.querySelector(`[name="${k}"]`);
+			meta[k] =
+				field.type === "checkbox" ? (field.checked ? "1" : "0") : v;
+		});
+
+		// 🔥 Suppentag-ID sicherstellen
+		const selectedDate = fpInput.value;
+		const suppentagId = await ensureSuppentagExists(selectedDate);
+		//meta.suppentag_id = suppentagId;
+		meta.suppentag_id = String(suppentagId);
+
 		meta.reservation_time = selectedTime || "00:00";
 		meta.reservation_datetime = `${selectedDate}T${meta.reservation_time}:00`;
 
@@ -627,14 +691,29 @@ document.addEventListener("DOMContentLoaded", () => {
 						if (match) timeValue = match[1];
 					}
 
-					// Falls Flatpickr schon aktiv → synchronisieren
 					if (window.fpTimePicker) {
 						window.fpTimePicker.setDate(timeValue || "12:00", true);
 					}
 
-					// Sicherheitsnetz: Value auch direkt setzen
 					timeInput.value = timeValue || "12:00";
 				}
+
+				// 🧠 Originalzustand merken (hier einfügen!)
+				modal.udReservationData = {
+					original: {
+						reservation_name: meta.reservation_name || "",
+						reservation_phone: meta.reservation_phone || "",
+						reservation_persons: meta.reservation_persons || "",
+						reservation_time:
+							meta.reservation_time ||
+							(meta.reservation_datetime?.match(
+								/T(\d{2}:\d{2})/
+							) || [])[1] ||
+							"",
+						reservation_menu: meta.reservation_menu || "",
+					},
+					id: data.id,
+				};
 
 				// 🔹 Modal öffnen
 				document.getElementById("modal-title").textContent =
@@ -648,22 +727,43 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		// 🗑 Reservation löschen
 		if (deleteBtn) {
-			if (!confirm("Möchtest du diese Reservation wirklich löschen?"))
-				return;
 			const id = deleteBtn.dataset.id;
-			try {
-				await apiFetch({
-					path: `/wp/v2/ud-reservation/${id}`,
-					method: "DELETE",
-				});
-				loadReservations();
-				window.ablyChannel?.publish("reservation_delete", { id });
-				modal.classList.add("hidden");
-				form.reset();
-				currentId = null;
-			} catch (err) {
-				alert("Fehler beim Löschen: " + err.message);
-			}
+			const date = fpInput.value;
+
+			udConfirm(
+				"Möchtest du diese Reservation wirklich löschen?",
+				"Reservation löschen",
+				{
+        okLabel: "Löschen",
+        cancelLabel: "Nicht löschen",
+					onSave: async () => {
+						// 🔥 LÖSCHEN
+						try {
+							await apiFetch({
+								path: `/wp/v2/ud-reservation/${id}`,
+								method: "DELETE",
+							});
+
+							window.ablyChannel?.publish("reservation_delete", {
+								id,
+							});
+
+							modal.classList.add("hidden");
+							form.reset();
+							currentId = null;
+							loadReservations();
+						} catch (err) {
+							console.error("Fehler beim Löschen:", err);
+							alert("Fehler beim Löschen: " + err.message);
+						}
+					},
+
+					onDiscard: () => {
+						// ❌ Nicht löschen → nichts tun
+					},
+				}
+			);
+
 			return;
 		}
 

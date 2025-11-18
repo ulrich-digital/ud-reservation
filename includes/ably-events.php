@@ -61,6 +61,9 @@ function ud_reservation_publish_ably_event($event_type, $post_id, $extra_data = 
 		return;
 	}
 
+
+
+
 	// Alle Metadaten erfassen (mit Struktur-Erhalt)
 	$meta_raw = get_post_meta($post_id);
 
@@ -86,6 +89,9 @@ function ud_reservation_publish_ably_event($event_type, $post_id, $extra_data = 
 
 	$channel = apply_filters('ud_reservation_ably_channel', 'reservations');
 	$url     = "https://rest.ably.io/channels/{$channel}/messages";
+
+error_log('[UD Reservation] Key (full): ' . $ably_key);
+
 
 	$args = [
 		'headers' => [
@@ -166,5 +172,6 @@ add_action('init', function () {
 	$key = ud_reservation_get_ably_key();
 	if ($key) {
 		error_log('[UD Reservation] 🔑 Aktueller Ably-Key: ' . substr($key, 0, 12) . '...');
+
 	}
 });

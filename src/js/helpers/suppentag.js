@@ -6,7 +6,6 @@
  */
 
 import apiFetch from "@wordpress/api-fetch";
-
 /**
  * Prüft, ob für ein bestimmtes Datum bereits ein Suppentag existiert.
  * Falls nicht vorhanden, wird automatisch ein neuer angelegt.
@@ -15,38 +14,64 @@ import apiFetch from "@wordpress/api-fetch";
  * @param {string} date - Datum im Format YYYY-MM-DD
  * @returns {Promise<number>} - ID des bestehenden oder neu erstellten Suppentags
  */
+
+//console.log(`suppentag.js geladen ✅`);
+
+// 🔒 interner Lock-Speicher
+const suppentagLocks = new Map();
+
 export async function ensureSuppentagExists(date) {
-	try {
-		// 🔍 1. Exakte Abfrage über eigenen REST-Endpunkt
-		const result = await apiFetch({ path: `/ud/v1/suppentag-by-date?date=${date}` });
 
-		if (result && Number(result.id) > 0) {
-			console.log(`✅ Suppentag für ${date} gefunden (ID ${result.id})`);
-			return result.id;
-		}
-
-		// 🆕 2. Wenn keiner existiert → neuen Suppentag anlegen
-		console.log(`🆕 Kein Suppentag für ${date} gefunden – wird erstellt...`);
-		const [year, month, day] = date.split("-");
-		const formattedTitle = `Suppentag ${day}.${month}.${year}`;
-
-		const created = await apiFetch({
-			path: `/wp/v2/ud-suppentag`,
-			method: "POST",
-			data: {
-				title: formattedTitle,
-				status: "publish",
-				meta: { suppentag_date: date },
-			},
-		});
-
-		console.log(`📦 Neuer Suppentag erstellt (ID ${created.id})`);
-		return created.id;
-	} catch (error) {
-		console.error("[UD-Suppentag] Fehler bei ensureSuppentagExists:", error);
-		throw error;
+	// Wenn für dieses Datum bereits ein Request läuft → denselben Promise zurückgeben
+	if (suppentagLocks.has(date)) {
+		return suppentagLocks.get(date);
 	}
+
+	const promise = (async () => {
+		try {
+			// 1. Prüfen, ob Suppentag existiert
+			const result = await apiFetch({
+				path: `/ud/v1/suppentag-by-date?date=${date}`,
+			});
+
+			if (result && Number(result.id) > 0) {
+				//console.log(`suppentag.js: ✔️ Suppentag existiert (ID ${result.id})`);
+				return result.id;
+			}
+
+			// 2. Neuen Suppentag erstellen
+			console.log(`suppentag.js: ➕ Erstelle neuen Suppentag für ${date}`);
+
+			const [year, month, day] = date.split("-");
+			const title = `Suppentag ${day}.${month}.${year}`;
+
+			const created = await apiFetch({
+				path: `/wp/v2/ud-suppentag`,
+				method: "POST",
+				data: {
+					title,
+					status: "publish",
+					meta: { suppentag_date: date },
+				},
+			});
+
+			console.log(`suppentag.js: 📦 Neuer Suppentag erstellt → ID ${created.id}`);
+			return created.id;
+
+		} finally {
+			// Lock entfernen, aber erst *nach* Abschluss
+			suppentagLocks.delete(date);
+		}
+	})();
+
+	// Lock setzen
+	suppentagLocks.set(date, promise);
+
+	// Promise zurückgeben
+	return promise;
 }
+
+
 
 /**
  * Lädt einen bestehenden Suppentag inkl. Metadaten aus der REST-API.

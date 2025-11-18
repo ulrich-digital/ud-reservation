@@ -454,8 +454,89 @@ label.ud-checkbox {
 .is-suppenkueche {
 	.lieferung,
 	.retouren,
-.calc-btn {
+	.calc-btn {
 		opacity: 0;
 		pointer-events: none;
 	}
 }
+
+/* =============================================================== *\
+   Title
+\* =============================================================== */
+.ud-confirm-backdrop {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.4);
+	z-index: 99999;
+}
+
+.ud-confirm-box {
+	background: var(--error-100);
+	border: 2px solid var(--error-600);
+	color: var(--error-600);
+	padding: 24px;
+	border-radius: 16px;
+	width: 330px;
+	max-width: 90%;
+	box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.ud-confirm-title {
+	margin-top: 0;
+	margin-bottom: 10px;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+.ud-confirm-message {
+	margin-bottom: 20px;
+}
+
+.ud-confirm-actions {
+	display: flex;
+justify-content: flex-end;
+	gap: 0.6rem;
+
+	button {
+		padding: 12px 16px;
+		border-radius: 8px;
+		font-weight: 300;
+		transition: all 0.2s;
+		font-size: 16px;
+		line-height: 16px;
+		transform-origin: center;
+
+		&:hover {
+			transform: scale(1.05);
+		}
+	}
+}
+
+.ud-confirm-discard,
+.ud-confirm-cancel {
+	border: 1px solid var(--neutral-400);
+	color: var(--neutral-700);
+	background-color: white;
+
+	&:hover {
+		color: var(--error-600);
+		border-color: var(--error-600);
+		background-color: var(--neutral-100);
+	}
+}
+
+.ud-confirm-save,
+.ud-confirm-ok {
+	background: var(--wp--preset--color--theme-500);
+	color: white;
+	border: 1px solid var(--wp--preset--color--theme-500);
+
+	&:hover {
+		background: var(--wp--preset--color--theme-600);
+		border-color: var(--wp--preset--color--theme-600);
+	}
+}
+
