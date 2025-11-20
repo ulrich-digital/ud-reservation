@@ -8,6 +8,13 @@ import iconClose from "../assets/icons/close.svg";
 
 import "../css/kiosk.scss";
 
+// ==============================================
+// 🔧 Einstellung: Namen anonymisieren?
+// true  = Ja, Namen werden anonymisiert
+// false = Nein, voller Name wird angezeigt
+// ==============================================
+const NAMEN_ANONYMISIEREN = false;
+
 /*
 function kioskDebug(msg) {
 	let box = document.getElementById("ud-debug-box");
@@ -34,44 +41,50 @@ function kioskDebug(msg) {
 }
 */
 
-
 document.addEventListener("DOMContentLoaded", () => {
-
-
-
 	/* =====================================================
 	   🔐 Nonce aktivieren, falls vorhanden
 	===================================================== */
 	if (window.udReservationSettings?.nonce) {
-		apiFetch.use(apiFetch.createNonceMiddleware(window.udReservationSettings.nonce));
+		apiFetch.use(
+			apiFetch.createNonceMiddleware(window.udReservationSettings.nonce)
+		);
 	}
 
 	/* =====================================================
 	   🔴 Ausverkauft prüfen (Tabellen-Variante A)
 	===================================================== */
 	async function checkSoldout() {
-		document.querySelectorAll("#ud-kiosk-ausverkauf").forEach(async (root) => {
-			const today = root.dataset.today;
-			const soldoutEl = root.querySelector(".ud-kiosk-soldout");
+		document
+			.querySelectorAll("#ud-kiosk-ausverkauf")
+			.forEach(async (root) => {
+				const today = root.dataset.today;
+				const soldoutEl = root.querySelector(".ud-kiosk-soldout");
 
-			try {
-				console.log(`[UD-Kiosk] Prüfe Ausverkauft für: ${today}`);
+				try {
+					console.log(`[UD-Kiosk] Prüfe Ausverkauft für: ${today}`);
 
-				// ⬇️ Korrigierte Fetch-Zeile – kein "date" mehr, sondern "today"
-				const res = await fetch(`/wp-json/ud-reservation/v1/soldout?date=${today}&t=${Date.now()}`);
-				const data = await res.json();
-				const isSoldout = data?.is_soldout === 1;
+					// ⬇️ Korrigierte Fetch-Zeile – kein "date" mehr, sondern "today"
+					const res = await fetch(
+						`/wp-json/ud-reservation/v1/soldout?date=${today}&t=${Date.now()}`
+					);
+					const data = await res.json();
+					const isSoldout = data?.is_soldout === 1;
 
-				soldoutEl.classList.toggle("visible", isSoldout);
-				soldoutEl.classList.toggle("hidden", !isSoldout);
+					soldoutEl.classList.toggle("visible", isSoldout);
+					soldoutEl.classList.toggle("hidden", !isSoldout);
 
-				console.log(`[UD-Kiosk] Ausverkauft (${today}): ${isSoldout}`);
-			} catch (err) {
-				console.error("[UD-Kiosk] Fehler beim Prüfen von Ausverkauft:", err);
-			}
-		});
+					console.log(
+						`[UD-Kiosk] Ausverkauft (${today}): ${isSoldout}`
+					);
+				} catch (err) {
+					console.error(
+						"[UD-Kiosk] Fehler beim Prüfen von Ausverkauft:",
+						err
+					);
+				}
+			});
 	}
-
 
 	/* =====================================================
 	   🥣 Tagessuppe + Reservationen laden
@@ -87,8 +100,11 @@ document.addEventListener("DOMContentLoaded", () => {
 				const res = await fetch("/wp-json/ud-reservation/v1/soup");
 				const data = await res.json();
 				const suppen = data || {};
-				const weekday = new Date().toLocaleDateString("de-CH", { weekday: "long" }).toLowerCase();
-				const suppe = suppen?.[weekday]?.name || "– keine Suppe hinterlegt –";
+				const weekday = new Date()
+					.toLocaleDateString("de-CH", { weekday: "long" })
+					.toLowerCase();
+				const suppe =
+					suppen?.[weekday]?.name || "– keine Suppe hinterlegt –";
 				soupEl.textContent = suppe;
 			} catch (e) {
 				soupEl.textContent = "– Fehler beim Laden –";
@@ -98,13 +114,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		// 📋 Reservationen
 		async function loadReservations() {
-// kioskDebug("loadReservations() gestartet");
+			// kioskDebug("loadReservations() gestartet");
 
 			try {
 				//const data = await fetch(`/wp-json/ud-reservation/v1/public-reservations?date=${today}`).then((res) => res.json());
-const data = await fetch(`/wp-json/ud-reservation/v1/public-reservations?date=${today}&_=${Date.now()}`, {
-	cache: "no-store",
-}).then((res) => res.json());
+				const data = await fetch(
+					`/wp-json/ud-reservation/v1/public-reservations?date=${today}&_=${Date.now()}`,
+					{
+						cache: "no-store",
+					}
+				).then((res) => res.json());
 
 				if (!Array.isArray(data)) {
 					console.error("[UD-Kiosk] Unerwartete API-Antwort:", data);
@@ -114,7 +133,10 @@ const data = await fetch(`/wp-json/ud-reservation/v1/public-reservations?date=${
 
 				const todayList = data.filter((r) => {
 					const meta = r.meta || {};
-					const dt = meta.reservation_datetime || meta.reservation_date || "";
+					const dt =
+						meta.reservation_datetime ||
+						meta.reservation_date ||
+						"";
 					return dt.startsWith(today);
 				});
 
@@ -122,7 +144,7 @@ const data = await fetch(`/wp-json/ud-reservation/v1/public-reservations?date=${
 					listEl.innerHTML = "<p>Keine Reservationen für heute.</p>";
 					return;
 				}
-// kioskDebug("Liste wird aktualisiert mit " + todayList.length + " Einträgen");
+				// kioskDebug("Liste wird aktualisiert mit " + todayList.length + " Einträgen");
 
 				listEl.innerHTML = todayList
 					.map((r) => {
@@ -131,7 +153,8 @@ const data = await fetch(`/wp-json/ud-reservation/v1/public-reservations?date=${
 						const persons = m.reservation_persons || "-";
 						const time =
 							m.reservation_time ||
-							(m.reservation_datetime?.match(/T(\d{2}:\d{2})/) || [])[1] ||
+							(m.reservation_datetime?.match(/T(\d{2}:\d{2})/) ||
+								[])[1] ||
 							"--:--";
 						const menu = m.reservation_menu || "";
 						const present = m.reservation_present === "1";
@@ -147,18 +170,29 @@ const data = await fetch(`/wp-json/ud-reservation/v1/public-reservations?date=${
 							</div>`;
 					})
 					.join("");
+listEl.dataset.count = todayList.length;
 
-				console.log(`[UD-Kiosk] ${todayList.length} Reservation(en) geladen.`);
+				console.log(
+					`[UD-Kiosk] ${todayList.length} Reservation(en) geladen.`
+				);
 			} catch (err) {
-				console.error("[UD-Kiosk] Fehler beim Laden der Reservationen:", err);
+				console.error(
+					"[UD-Kiosk] Fehler beim Laden der Reservationen:",
+					err
+				);
 				listEl.innerHTML = `<p>Fehler beim Laden.</p>`;
 			}
-// kioskDebug("Aktuelles listEl.innerHTML Länge: " + listEl.innerHTML.length);
-// kioskDebug("Anzahl #ud-kiosk-list im DOM: " + document.querySelectorAll("#ud-kiosk-list").length);
-
+			// kioskDebug("Aktuelles listEl.innerHTML Länge: " + listEl.innerHTML.length);
+			// kioskDebug("Anzahl #ud-kiosk-list im DOM: " + document.querySelectorAll("#ud-kiosk-list").length);
 		}
 
 		function anonymizeName(fullName) {
+			if (!NAMEN_ANONYMISIEREN) {
+				// voller Name ausgeben
+				return fullName;
+			}
+
+			// anonymisierte Version
 			const parts = fullName.trim().split(" ");
 			if (parts.length < 2) return fullName;
 			const [first, last] = parts;
@@ -169,24 +203,24 @@ const data = await fetch(`/wp-json/ud-reservation/v1/public-reservations?date=${
 		   🔄 Ably Live-Updates (Reservationen + Ausverkauft)
 		===================================================== */
 
-// ✅ Warte-Funktion, bis Ably wirklich verfügbar ist
-function waitForAbly(maxTries = 20, delay = 200) {
-	return new Promise((resolve, reject) => {
-		let tries = 0;
-		const check = () => {
-			if (typeof Ably !== "undefined") return resolve(Ably);
-			if (++tries >= maxTries) return reject(new Error("Ably nicht geladen"));
-			setTimeout(check, delay);
-		};
-		check();
-	});
-}
-
+		// ✅ Warte-Funktion, bis Ably wirklich verfügbar ist
+		function waitForAbly(maxTries = 20, delay = 200) {
+			return new Promise((resolve, reject) => {
+				let tries = 0;
+				const check = () => {
+					if (typeof Ably !== "undefined") return resolve(Ably);
+					if (++tries >= maxTries)
+						return reject(new Error("Ably nicht geladen"));
+					setTimeout(check, delay);
+				};
+				check();
+			});
+		}
 
 		function initRealtime() {
 			if (typeof Ably === "undefined") {
 				console.warn("[UD-Kiosk] ⚠️ Ably ist nicht geladen!");
-		// kioskDebug("Ably nicht geladen");
+				// kioskDebug("Ably nicht geladen");
 
 				return;
 			}
@@ -199,16 +233,23 @@ function waitForAbly(maxTries = 20, delay = 200) {
 			const channel = ably.channels.get("reservations");
 
 			ably.connection.once("connected", () => {
-				console.log("[UD-Kiosk] 🔌 Verbunden mit Channel:", channel.name);
-		// kioskDebug("Ably verbunden mit Channel: " + channel.name);
+				console.log(
+					"[UD-Kiosk] 🔌 Verbunden mit Channel:",
+					channel.name
+				);
+				// kioskDebug("Ably verbunden mit Channel: " + channel.name);
 			});
 
 			// Reconnect-Sicherheit (z. B. WLAN-Verlust)
 			ably.connection.on("disconnected", () => {
-				console.warn("[UD-Kiosk] 🔌 Verbindung verloren – warte auf Reconnect …");
+				console.warn(
+					"[UD-Kiosk] 🔌 Verbindung verloren – warte auf Reconnect …"
+				);
 			});
 			ably.connection.on("reconnected", () => {
-				console.log("[UD-Kiosk] 🔌 Wieder verbunden – prüfe Ausverkauft erneut");
+				console.log(
+					"[UD-Kiosk] 🔌 Wieder verbunden – prüfe Ausverkauft erneut"
+				);
 				checkSoldout();
 			});
 
@@ -218,9 +259,15 @@ function waitForAbly(maxTries = 20, delay = 200) {
 				const data = msg.data || {};
 
 				console.log("[UD-Kiosk] 🔔 Live-Event:", event, data);
-			// kioskDebug("Live-Event: " + event);
+				// kioskDebug("Live-Event: " + event);
 
-				if (["reservation_create", "reservation_update", "reservation_delete"].includes(event)) {
+				if (
+					[
+						"reservation_create",
+						"reservation_update",
+						"reservation_delete",
+					].includes(event)
+				) {
 					loadReservations();
 				}
 
@@ -228,14 +275,21 @@ function waitForAbly(maxTries = 20, delay = 200) {
 					const date = data.date;
 					const status = !!data.status;
 
-					document.querySelectorAll("#ud-kiosk-ausverkauf").forEach((root) => {
-						if (root.dataset.today === date) {
-							const soldoutEl = root.querySelector(".ud-kiosk-soldout");
-							soldoutEl.classList.toggle("visible", status);
-							soldoutEl.classList.toggle("hidden", !status);
-							console.log(`[UD-Kiosk] 🔁 Live-Update: ${date} → ${status ? "AUSVERKAUFT" : "frei"}`);
-						}
-					});
+					document
+						.querySelectorAll("#ud-kiosk-ausverkauf")
+						.forEach((root) => {
+							if (root.dataset.today === date) {
+								const soldoutEl =
+									root.querySelector(".ud-kiosk-soldout");
+								soldoutEl.classList.toggle("visible", status);
+								soldoutEl.classList.toggle("hidden", !status);
+								console.log(
+									`[UD-Kiosk] 🔁 Live-Update: ${date} → ${
+										status ? "AUSVERKAUFT" : "frei"
+									}`
+								);
+							}
+						});
 				}
 			});
 		}
@@ -243,12 +297,10 @@ function waitForAbly(maxTries = 20, delay = 200) {
 		// 🚀 Initial laden
 
 		//initRealtime();
-// 🚀 Initial laden
+		// 🚀 Initial laden
 		loadSoup();
 		loadReservations();
 		checkSoldout();
 		initRealtime();
-
-
 	});
 });
