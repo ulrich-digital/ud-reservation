@@ -33,11 +33,19 @@ add_action('init', function () {
 		'public'       => true,
 		'show_in_rest' => true,
 		'rest_base'    => 'ud-reservation',
-		'supports'     => ['title', 'editor', 'custom-fields'],
+		'supports'     => ['title', 'custom-fields'],
 		'menu_icon'    => 'dashicons-calendar-alt',
 		'menu_position' => 22, // 🟢 direkt nach Suppentagen
 	]);
 });
+
+// klassichen Editor erzwingen
+add_filter('use_block_editor_for_post_type', function($use_block_editor, $post_type) {
+    if ($post_type === 'ud_reservation') {
+        return false; // kein Gutenberg/FSE
+    }
+    return $use_block_editor;
+}, 10, 2);
 
 // ======================================================
 // 🍲 Custom Post Type Suppentag
@@ -171,6 +179,74 @@ add_action('rest_api_init', function () {
 		'permission_callback' => '__return_true',
 	]);
 });
+
+// ======================================================
+// Reservationen nur nach Datum laden – direkt serverseitig
+// ======================================================
+
+add_action('rest_api_init', function () {
+    register_rest_route('ud-reservation/v2', '/by-date', [
+        'methods'  => 'GET',
+        'callback' => 'ud_reservation_get_by_date',
+        'permission_callback' => function () {
+            return is_user_logged_in();
+        },
+    ]);
+});
+
+
+function ud_reservation_get_by_date(WP_REST_Request $request) {
+
+    $date = sanitize_text_field($request->get_param('date'));
+
+    if (empty($date)) {
+        return new WP_Error(
+            'missing_date',
+            'Der Parameter "date" fehlt.',
+            ['status' => 400]
+        );
+    }
+
+    // Exakte Suche wie YYYY-MM-DD%
+    $query = new WP_Query([
+        'post_type'      => 'ud_reservation',
+        'post_status'    => ['publish', 'draft', 'pending'],
+        'posts_per_page' => -1, // 🔥 keine Begrenzung
+        'orderby'        => 'meta_value',
+        'order'          => 'ASC',
+        'meta_key'       => 'reservation_datetime',
+        'meta_query'     => [
+            [
+                'key'     => 'reservation_datetime',
+                'value'   => $date,
+                'compare' => 'LIKE',
+            ],
+        ],
+    ]);
+
+    $results = [];
+
+    foreach ($query->posts as $post) {
+
+        $meta = get_post_meta($post->ID);
+
+        $results[] = [
+            'id'   => $post->ID,
+            'meta' => [
+                'reservation_name'     => $meta['reservation_name'][0]     ?? '',
+                'reservation_phone'    => $meta['reservation_phone'][0]    ?? '',
+                'reservation_persons'  => $meta['reservation_persons'][0]  ?? '',
+                'reservation_menu'     => $meta['reservation_menu'][0]     ?? '',
+                'reservation_present'  => $meta['reservation_present'][0]  ?? '0',
+                'reservation_datetime' => $meta['reservation_datetime'][0] ?? '',
+                'suppentag_id'         => $meta['suppentag_id'][0]         ?? '',
+            ]
+        ];
+    }
+
+    // Ergebnis zurückgeben
+    return rest_ensure_response($results);
+}
 
 // ======================================================
 // 📊 Statistik Suppenabgabe (Kinder & Erwachsene)

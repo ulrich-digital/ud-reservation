@@ -321,40 +321,76 @@ document.addEventListener("DOMContentLoaded", () => {
 		defaultDate: pfTimeInput.value || "12:00",
 	});
 
+	// =====================================================
+	// 🔄 Pagination-Loader – lädt ALLE Reservationen (mit Logs)
+	// =====================================================
+	async function fetchAllReservations() {
+		let all = [];
+		let page = 1;
+		let keepGoing = true;
+
+		console.log("📡 Starte Pagination-Ladevorgang …");
+
+		while (keepGoing) {
+			try {
+				const batch = await apiFetch({
+					path: `/wp/v2/ud-reservation?per_page=100&page=${page}`,
+				});
+
+				console.log(`📥 Page ${page}: ${batch.length} Einträge`);
+
+				if (!batch || batch.length === 0) {
+					keepGoing = false;
+				} else {
+					all = all.concat(batch);
+					page++;
+				}
+			} catch (err) {
+				console.error("❌ Pagination-Fehler:", err);
+				keepGoing = false;
+			}
+		}
+
+		console.log(`📦 Gesamt geladen: ${all.length} Reservationen`);
+		return all;
+	}
+
 	/* =====================================================
-	   🧾 Reservationen laden
+	🧾 Reservationen laden — direkte REST-Route ohne Pagination
 	===================================================== */
 	async function loadReservations() {
+		console.log("🔍 loadReservations() – via /ud-reservation/v2/by-date");
+
 		list.innerHTML = "<p>Lade Reservationen...</p>";
-		//const selectedDate = datePicker.value;
-		const selectedDate = fpInput.value; // technisches Datum, z. B. "2025-11-10"
+		const selectedDate = fpInput.value; // YYYY-MM-DD
+
+		console.log(`📅 Gewähltes Datum: ${selectedDate}`);
 
 		try {
-			const data = await apiFetch({
-				path: "/wp/v2/ud-reservation?per_page=100",
+			// 🔥 Neue REST-Route nutzen
+			const filtered = await apiFetch({
+				path: `/ud-reservation/v2/by-date?date=${selectedDate}`,
 			});
-			const filtered = data.filter((r) => {
-				const dt =
-					r.meta?.reservation_datetime ||
-					r.meta?.reservation_date ||
-					"";
-				return dt.startsWith(selectedDate);
-			});
+
+			console.log(`🎯 Backend lieferte ${filtered.length} Reservationen`);
+
 			if (!filtered.length) {
 				list.innerHTML = "<p>Keine Reservationen gefunden.</p>";
 				return;
 			}
 
+			// 🔥 Sortieren nach Uhrzeit aus reservation_datetime
 			filtered.sort((a, b) => {
 				const timeA =
-					(a.meta?.reservation_datetime?.match(/T(\d{2}:\d{2})/) ||
-						[])[1] || "";
+					(a.meta?.reservation_datetime?.match(/T(\d{2}:\d{2})/) || [])[1] || "";
 				const timeB =
-					(b.meta?.reservation_datetime?.match(/T(\d{2}:\d{2})/) ||
-						[])[1] || "";
+					(b.meta?.reservation_datetime?.match(/T(\d{2}:\d{2})/) || [])[1] || "";
 				return timeA.localeCompare(timeB, "de", { numeric: true });
 			});
 
+			console.log("⏱ Sortierung abgeschlossen.");
+
+			// 🔥 HTML generieren
 			list.innerHTML = `
 				<div class="ud-res-list-flex">
 					${filtered
@@ -364,19 +400,19 @@ document.addEventListener("DOMContentLoaded", () => {
 							const persons = m.reservation_persons || "";
 							const menu = m.reservation_menu || "–";
 							const present = m.reservation_present === "1";
+
 							const time =
-								(m.reservation_datetime?.match(
-									/T(\d{2}:\d{2})/
-								) || [])[1] ||
+								(m.reservation_datetime?.match(/T(\d{2}:\d{2})/) || [])[1] ||
 								m.reservation_time ||
 								"--:--";
+
 							return `
 								<div class="ud-res-item ${present ? "is-present" : ""}">
 									<div class="ud-res-name">${name}</div>
 									<div class="ud-res-meta">
-									  	<span class="ud-anzahl-personen">${iconPeopleGroup}${persons}</span>
-									  	<span class="ud-uhrzeit">${iconClock}${time}</span>
-									  	<span class="ud-supplement">${iconCheese}${menu}</span>
+										<span class="ud-anzahl-personen">${iconPeopleGroup}${persons}</span>
+										<span class="ud-uhrzeit">${iconClock}${time}</span>
+										<span class="ud-supplement">${iconCheese}${menu}</span>
 									</div>
 									<div class="ud-res-status ${present ? "is-present" : ""}">
 										${present ? "anwesend" : "abwesend"}
@@ -390,7 +426,11 @@ document.addEventListener("DOMContentLoaded", () => {
 						})
 						.join("")}
 				</div>`;
+
+			console.log("🎉 Reservationen gerendert.");
+
 		} catch (error) {
+			console.error("❌ Fehler beim Laden:", error);
 			list.innerHTML = `<p>Fehler: ${error.message}</p>`;
 		}
 	}

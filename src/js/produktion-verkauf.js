@@ -1,11 +1,9 @@
 import apiFetch from "@wordpress/api-fetch";
 import { ensureSuppentagExists } from "./helpers/suppentag";
-import {udConfirm}  from "./helpers/confirm";
+import { udConfirm } from "./helpers/confirm";
 import "../css/produktion-verkauf.scss";
 
 console.log("[UD-Produktion] Modul geladen ✅");
-
-
 
 /* =====================================================
    🏭 Produktion + Verkauf – Statistik-Modal
@@ -42,8 +40,64 @@ function updateProgressRing(lieferanten = []) {
 	text.textContent = `${erledigt} von ${total} erledigt`;
 }
 
+function updateRowType(row, defaultLieferanten) {
+    const select = row.querySelector("select.lieferant");
+    if (!select) return;
+
+    const custom = row.querySelector(".custom-lieferant");
+
+    let name =
+        select.value === "custom"
+            ? (custom?.value?.trim() || "")
+            : select.value;
+
+    const def = defaultLieferanten.find(d => d.name === name);
+    const type = def?.type || ""; // "" | "intern" | "extern"
+
+    row.classList.remove("intern", "extern");
+
+    if (type) {
+        row.classList.add(type);
+    }
+}
 
 
+function fixLegacySuppenkueche(lieferanten) {
+	if (!Array.isArray(lieferanten)) return lieferanten;
+
+	// Alle alten Einträge "Suppenküche" finden
+	const supp = lieferanten.filter((l) => l.name === "Suppenküche");
+
+	// Nur wenn exakt 2 vorhanden sind → transformieren
+	if (supp.length === 2) {
+		const newList = [];
+		let counter = 0;
+
+		for (const l of lieferanten) {
+			if (l.name === "Suppenküche") {
+				if (counter === 0) {
+					newList.push({
+						...l,
+						name: "Take Away", // extern
+					});
+				} else {
+					newList.push({
+						...l,
+						name: "Vor Ort", // extern
+					});
+				}
+				counter++;
+			} else {
+				newList.push(l);
+			}
+		}
+
+		return newList;
+	}
+
+	// keine oder andersartige Legacy-Daten → unverändert lassen
+	return lieferanten;
+}
 
 if (produktionBtn) {
 	// 🟢 Beim Laden der Seite sofort Fortschrittsring aktualisieren
@@ -64,12 +118,14 @@ if (produktionBtn) {
 				path: `/wp/v2/ud-suppentag/${suppentagId}?_=${Date.now()}`,
 			});
 
-			const lieferanten = Array.isArray(
+			let lieferanten = Array.isArray(
 				suppentag.meta?.suppentag_produktion
 			)
 				? suppentag.meta.suppentag_produktion
 				: [];
 
+			// 🔧 alte Daten korrigieren
+			lieferanten = fixLegacySuppenkueche(lieferanten);
 			updateProgressRing(lieferanten);
 			console.log(
 				"[UD-Produktion] Fortschritt beim Seitenstart aktualisiert"
@@ -95,7 +151,6 @@ if (produktionBtn) {
 		produktionBody.hidden = true;
 		produktionBody.innerHTML = "";
 
-
 		try {
 			const suppentagId = await ensureSuppentagExists(date);
 
@@ -104,9 +159,12 @@ if (produktionBtn) {
 			});
 			const meta = suppentag.meta || {};
 			const produktion = meta.produktion_gesamt || 0;
-			const lieferanten = Array.isArray(meta.suppentag_produktion)
+			let lieferanten = Array.isArray(meta.suppentag_produktion)
 				? meta.suppentag_produktion
 				: [];
+
+			// 🔧 alte Daten korrigieren
+			lieferanten = fixLegacySuppenkueche(lieferanten);
 
 			renderProduktionForm(suppentagId, produktion, lieferanten, date);
 			produktionLoading.hidden = true;
@@ -128,7 +186,9 @@ if (produktionBtn) {
 document.addEventListener("DOMContentLoaded", () => {
 	const prodDateInput = document.getElementById("reservation-date-flatpickr");
 	if (!prodDateInput) {
-		console.warn("[UD-Produktion] Kein #reservation-date-flatpickr gefunden");
+		console.warn(
+			"[UD-Produktion] Kein #reservation-date-flatpickr gefunden"
+		);
 		return;
 	}
 
@@ -139,7 +199,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
 		try {
 			// Suppentag nur laden, nicht neu erstellen
-			const res = await fetch(`/wp-json/ud/v1/suppentag-by-date?date=${date}`);
+			const res = await fetch(
+				`/wp-json/ud/v1/suppentag-by-date?date=${date}`
+			);
 			const json = await res.json();
 
 			if (json?.id) {
@@ -147,36 +209,44 @@ document.addEventListener("DOMContentLoaded", () => {
 					path: `/wp/v2/ud-suppentag/${json.id}?_=${Date.now()}`,
 				});
 
-				const lieferanten = Array.isArray(suppentag.meta?.suppentag_produktion)
+				let lieferanten = Array.isArray(
+					suppentag.meta?.suppentag_produktion
+				)
 					? suppentag.meta.suppentag_produktion
 					: [];
+				// 🔧 alte Daten korrigieren
+				lieferanten = fixLegacySuppenkueche(lieferanten);
 				updateProgressRing(lieferanten);
 			} else {
 				// Kein Suppentag → Fortschritt auf 0 setzen
 				updateProgressRing([]);
 			}
 		} catch (err) {
-			console.error("[UD-Produktion] Fehler beim Aktualisieren nach Datumwechsel:", err);
+			console.error(
+				"[UD-Produktion] Fehler beim Aktualisieren nach Datumwechsel:",
+				err
+			);
 		}
 	});
 });
-
 
 /* =====================================================
    🧱 Formularaufbau
 ===================================================== */
 function renderProduktionForm(suppentagId, produktion, lieferanten, date) {
-produktionModal.udProduktionData = {
-    suppentagId,
-    date
-};
+	produktionModal.udProduktionData = {
+		suppentagId,
+		date,
+	};
+
 	const defaultLieferanten = [
-		"Reichmuth",
-		"Lüönd",
-		"Schuler",
-		"Spar",
-		"Roman",
-		"Suppenküche",
+		{ name: "Reichmuth", type: "extern" },
+		{ name: "Lüönd", type: "extern" },
+		{ name: "Schuler", type: "extern" },
+		{ name: "Spar", type: "extern" },
+		{ name: "Roman", type: "extern" },
+		{ name: "Take Away", type: "intern" },
+		{ name: "Vor Ort", type: "intern" },
 	];
 
 	const d = new Date(date);
@@ -188,9 +258,10 @@ produktionModal.udProduktionData = {
 		.toString()
 		.padStart(2, "0")}.${d.getFullYear()}`;
 
+
 	if (!Array.isArray(lieferanten) || lieferanten.length === 0) {
-		lieferanten = defaultLieferanten.map((name) => ({
-			name,
+		lieferanten = defaultLieferanten.map((d) => ({
+			name: d.name, // <-- WICHTIG!
 			lieferung: 0,
 			retouren: 0,
 			verkauf: 0,
@@ -198,105 +269,142 @@ produktionModal.udProduktionData = {
 	}
 
 	produktionBody.innerHTML = `
-		<h3 class="ud-modal-title">Produktion und Verkauf vom ${formattedDate}</h3>
-		<div class="verpflegung-group ud-inner-group">
+        <h3 class="ud-modal-title">Produktion und Verkauf vom ${formattedDate}</h3>
+        <div class="verpflegung-group ud-inner-group">
 
-			<div class="rows">
-				<div class="produktion-gesamt row">
-					<label>Produktion gesamt (l)</label>
-					<input type="number" id="produktion-gesamt" value="${produktion || 0}" min="0">
-				</div>
-			</div>
+            <div class="rows">
+                <div class="produktion-gesamt row">
+                    <label>Produktion gesamt (l)</label>
+                    <input type="number" id="produktion-gesamt" value="${
+						produktion || 0
+					}" min="0">
+                </div>
+            </div>
 
-			<table class="ud-produktion-table">
-				<thead>
-					<tr>
-						<th>Lieferant</th>
-						<th>Lieferung (l)</th>
-						<th>Retouren (l)</th>
-						<th>Verkauf (l)</th>
-						<th></th>
-					</tr>
-				</thead>
-				<tbody>
-					${lieferanten
+            <table class="ud-produktion-table">
+                <thead>
+                    <tr>
+                        <th>Lieferant</th>
+                        <th>Lieferung (l)</th>
+                        <th>Retouren (l)</th>
+                        <th>Verkauf (l)</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+${lieferanten
+	.map((l) => {
+		const def = defaultLieferanten.find((d) => d.name === l.name);
+		const typeClass = def ? def.type : "";
+
+		return `
+        <tr class="${typeClass}">
+
+            <!-- Lieferant -->
+            <td class="td-lieferant">
+                <select class="lieferant">
+                    <option value="">– Lieferant wählen –</option>
+
+                    ${defaultLieferanten
 						.map(
-							(l) => `
-						<tr>
-							<td>
-								<select class="lieferant">
-									<option value="">– Lieferant wählen –</option>
-									${defaultLieferanten
-										.map(
-											(opt) =>
-												`<option value="${opt}" ${
-													l.name === opt
-														? "selected"
-														: ""
-												}>${opt}</option>`
-										)
-										.join("")}
-									<option value="custom" ${
-										l.name &&
-										!defaultLieferanten.includes(l.name)
-											? "selected"
-											: ""
-									}>Anderer Lieferant…</option>
-								</select>
-								<input type="text" class="custom-lieferant" placeholder="Name eingeben"
-									value="${!defaultLieferanten.includes(l.name) ? l.name || "" : ""}"
-									style="${
-										!defaultLieferanten.includes(l.name) &&
-										l.name
-											? "display:block"
-											: "display:none"
-									}; margin-top:4px;">
-							</td>
-							<td><input type="number" class="lieferung" value="${
-								l.lieferung || 0
-							}" min="0"></td>
-							<td><input type="number" class="retouren" value="${
-								l.retouren || 0
-							}" min="0"></td>
-							<td class="verkauf-cell">
-								<button type="button" class="calc-btn" title="Berechnen (Lieferung - Retouren)">
-									<i class="fa-solid fa-calculator"></i>
-								</button>
-								<input type="number" class="verkauf" value="${l.verkauf || 0}" min="0">
-							</td>
-							<td class="remove-cell"><button class="remove ud-modal-close"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M6.4 19L5 17.6L10.6 12L5 6.4L6.4 5L12 10.6L17.6 5L19 6.4L13.4 12L19 17.6L17.6 19L12 13.4L6.4 19Z" fill="#B2B2B2"></path>
-</svg></button></td>
-						</tr>`
+							(opt) => `
+                                <option value="${opt.name}" ${
+								l.name === opt.name ? "selected" : ""
+							}>${opt.name}</option>`
 						)
 						.join("")}
-					<tr class="total-row">
-						<td class="total-label"><strong>Total</strong></td>
-						<td></td>
-						<td class="total-retouren"><strong>0 l</strong></td>
-						<td class="total-verkauf"><strong>0 l</strong></td>
-						<td></td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
-		<div class="actions">
-			<div class="left-actions">
-				<button id="add-lieferant" class="button-add">+ Lieferant</button>
-			</div>
-			<div class="right-actions">
-				<button id="cancel-produktion" class="button-cancel">Abbrechen</button>
-				<button id="save-produktion" class="button-save">Speichern</button>
-			</div>
-		</div>
-	`;
+
+                    <option value="custom" ${
+						l.name &&
+						!defaultLieferanten.some((d) => d.name === l.name)
+							? "selected"
+							: ""
+					}>Anderer Lieferant…</option>
+                </select>
+
+                <input
+                    type="text"
+                    class="custom-lieferant"
+                    placeholder="Name eingeben"
+                    value="${
+						!defaultLieferanten.some((d) => d.name === l.name)
+							? l.name || ""
+							: ""
+					}"
+                    style="${
+						!defaultLieferanten.some((d) => d.name === l.name) &&
+						l.name
+							? "display:block"
+							: "display:none"
+					}; margin-top:4px;"
+                >
+            </td>
+
+            <!-- Lieferung -->
+            <td class="td-lieferung">
+                <input type="number" class="lieferung" value="${
+					l.lieferung || 0
+				}" min="0">
+            </td>
+
+            <!-- Retouren -->
+            <td class="td-retouren">
+                <input type="number" class="retouren" value="${
+					l.retouren || 0
+				}" min="0">
+            </td>
+
+            <!-- Verkauf -->
+            <td class="td-verkauf verkauf-cell">
+                <button type="button" class="calc-btn" title="Berechnen (Lieferung - Retouren)">
+                    <i class="fa-solid fa-calculator"></i>
+                </button>
+                <input type="number" class="verkauf" value="${
+					l.verkauf || 0
+				}" min="0">
+            </td>
+
+            <!-- Entfernen -->
+            <td class="td-remove remove-cell">
+                <button class="remove ud-modal-close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6.4 19L5 17.6L10.6 12L5 6.4L6.4 5L12 10.6L17.6 5L19 6.4L13.4 12L19 17.6L17.6 19L12 13.4L6.4 19Z" fill="#B2B2B2"></path>
+                    </svg>
+                </button>
+            </td>
+
+        </tr>`;
+	})
+	.join("")}
 
 
-// Originalzustand speichern
-produktionModal.dataset.originalState = JSON.stringify({
-    produktion,
-    lieferanten
-});
+                    <tr class="total-row">
+                        <td class="total-label"><strong>Total</strong></td>
+                        <td></td>
+                        <td class="total-retouren"><strong>0 l</strong></td>
+                        <td class="total-verkauf"><strong>0 l</strong></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="actions">
+            <div class="left-actions">
+                <button id="add-lieferant" class="button-add">+ Lieferant</button>
+            </div>
+            <div class="right-actions">
+                <button id="cancel-produktion" class="button-cancel">Abbrechen</button>
+                <button id="save-produktion" class="button-save">Speichern</button>
+            </div>
+        </div>
+    `;
+
+	// Originalzustand speichern
+	produktionModal.dataset.originalState = JSON.stringify({
+		produktion,
+		lieferanten,
+	});
 	/* =============================================================== *\
    Title
 \* =============================================================== */
@@ -304,6 +412,9 @@ produktionModal.dataset.originalState = JSON.stringify({
 	const tableBody = produktionBody.querySelector(
 		".ud-produktion-table tbody"
 	);
+tableBody.querySelectorAll("tr").forEach((row) => {
+    updateRowType(row, defaultLieferanten);
+});
 
 	// Funktion: Zeile hervorheben, wenn Lieferant = Suppenküche
 	function updateSuppenkuecheRows() {
@@ -327,6 +438,14 @@ produktionModal.dataset.originalState = JSON.stringify({
 			updateSuppenkuecheRows();
 		}
 	});
+
+tableBody.addEventListener("change", (e) => {
+    if (e.target.matches("select.lieferant") || e.target.matches(".custom-lieferant")) {
+        const row = e.target.closest("tr");
+        updateRowType(row, defaultLieferanten);
+    }
+});
+
 
 	const tbody = produktionBody.querySelector("tbody");
 
@@ -387,18 +506,16 @@ produktionModal.dataset.originalState = JSON.stringify({
 		updateProgressRing(collectProduktionData());
 	});
 
-produktionBody
-    .querySelector("#cancel-produktion")
-    .addEventListener("click", () => {
-        if (hasUnsavedProduktionChanges()) {
-            confirmProduktionClose();
-        } else {
-            produktionModal.hidden = true;
-            document.body.style.overflow = "";
-        }
-    });
-
-
+	produktionBody
+		.querySelector("#cancel-produktion")
+		.addEventListener("click", () => {
+			if (hasUnsavedProduktionChanges()) {
+				confirmProduktionClose();
+			} else {
+				produktionModal.hidden = true;
+				document.body.style.overflow = "";
+			}
+		});
 
 	produktionBody
 		.querySelector("#save-produktion")
@@ -420,13 +537,12 @@ produktionBody
 					},
 				});
 
-            showToast("Produktion gespeichert!");   // ← HIER EINFÜGEN ✔
+				showToast("Produktion gespeichert!"); // ← HIER EINFÜGEN ✔
 				updateProgressRing(data);
 				produktionModal.hidden = true;
 			} catch (err) {
 				console.error("[UD-Produktion] Fehler beim Speichern:", err);
-            showToast("Fehler beim Speichern!", true);   // ← optional
-
+				showToast("Fehler beim Speichern!", true); // ← optional
 			}
 		});
 
@@ -472,140 +588,138 @@ function updateProduktionTotals() {
 }
 
 function showToast(msg, isError = false) {
-    const toast = document.createElement("div");
-    toast.className =
-        "ud-toast" + (isError ? " ud-toast--error" : " ud-toast--success");
-    toast.textContent = msg;
-    document.body.appendChild(toast);
+	const toast = document.createElement("div");
+	toast.className =
+		"ud-toast" + (isError ? " ud-toast--error" : " ud-toast--success");
+	toast.textContent = msg;
+	document.body.appendChild(toast);
 
-    setTimeout(() => {
-        toast.classList.add("ud-toast--visible");
-    }, 10);
+	setTimeout(() => {
+		toast.classList.add("ud-toast--visible");
+	}, 10);
 
-    setTimeout(() => {
-        toast.classList.remove("ud-toast--visible");
-        setTimeout(() => toast.remove(), 300);
-    }, 2500);
+	setTimeout(() => {
+		toast.classList.remove("ud-toast--visible");
+		setTimeout(() => toast.remove(), 300);
+	}, 2500);
 }
-
-
-
-
-
 
 /* =====================================================
    🔍 State-Snapshot (für Änderungsprüfung)
 ===================================================== */
 function hasUnsavedProduktionChanges() {
-    const original = produktionModal.dataset.originalState;
-    if (!original) return false;
+	const original = produktionModal.dataset.originalState;
+	if (!original) return false;
 
-    const current = JSON.stringify({
-        produktion: Number(document.getElementById("produktion-gesamt")?.value || 0),
-        lieferanten: collectProduktionData(),
-    });
+	const current = JSON.stringify({
+		produktion: Number(
+			document.getElementById("produktion-gesamt")?.value || 0
+		),
+		lieferanten: collectProduktionData(),
+	});
 
-    return current !== original;
+	return current !== original;
 }
-
 
 function collectProduktionDataState() {
-    return {
-        produktion: Number(document.getElementById("produktion-gesamt")?.value || 0),
-        lieferanten: collectProduktionData()
-    };
+	return {
+		produktion: Number(
+			document.getElementById("produktion-gesamt")?.value || 0
+		),
+		lieferanten: collectProduktionData(),
+	};
 }
-
 
 function confirmProduktionClose() {
-    const data = produktionModal.udProduktionData;
+	const data = produktionModal.udProduktionData;
 
-    if (!data) {
-        console.error("❌ confirmProduktionClose: keine Modal-Daten gefunden");
-        produktionModal.hidden = true;
-        return;
-    }
+	if (!data) {
+		console.error("❌ confirmProduktionClose: keine Modal-Daten gefunden");
+		produktionModal.hidden = true;
+		return;
+	}
 
-    const { suppentagId, date } = data;
+	const { suppentagId, date } = data;
 
-    udConfirm(
-        "Du hast Änderungen vorgenommen. Möchtest du speichern?",
-        "Änderungen vorhanden",
-        {
-				okLabel: "Speichern",
-				cancelLabel: "Nicht speichern",
-            onSave: async () => {
-                // Daten aus dem Formular einsammeln
-                const lieferanten = collectProduktionData();
-                const produktionGesamt = Number(
-                    document.getElementById("produktion-gesamt")?.value || 0
-                );
+	udConfirm(
+		"Du hast Änderungen vorgenommen. Möchtest du speichern?",
+		"Änderungen vorhanden",
+		{
+			okLabel: "Speichern",
+			cancelLabel: "Nicht speichern",
+			onSave: async () => {
+				// Daten aus dem Formular einsammeln
+				const lieferanten = collectProduktionData();
+				const produktionGesamt = Number(
+					document.getElementById("produktion-gesamt")?.value || 0
+				);
 
-                try {
-                    await apiFetch({
-                        path: `/wp/v2/ud-suppentag/${suppentagId}`,
-                        method: "POST",
-                        data: {
-                            meta: {
-                                produktion_gesamt: produktionGesamt,
-                                suppentag_produktion: lieferanten,
-                            },
-                        },
-                    });
+				try {
+					await apiFetch({
+						path: `/wp/v2/ud-suppentag/${suppentagId}`,
+						method: "POST",
+						data: {
+							meta: {
+								produktion_gesamt: produktionGesamt,
+								suppentag_produktion: lieferanten,
+							},
+						},
+					});
 
-                    showToast("Produktion gespeichert!");
-                } catch (err) {
-                    console.error("[UD-Produktion] Fehler beim Speichern:", err);
-                    showToast("Fehler beim Speichern!", true);
-                }
+					showToast("Produktion gespeichert!");
+				} catch (err) {
+					console.error(
+						"[UD-Produktion] Fehler beim Speichern:",
+						err
+					);
+					showToast("Fehler beim Speichern!", true);
+				}
 
-                produktionModal.hidden = true;
-                document.body.style.overflow = "";
-            },
+				produktionModal.hidden = true;
+				document.body.style.overflow = "";
+			},
 
-            onDiscard: () => {
-                produktionModal.hidden = true;
-                document.body.style.overflow = "";
-            }
-        }
-    );
+			onDiscard: () => {
+				produktionModal.hidden = true;
+				document.body.style.overflow = "";
+			},
+		}
+	);
 }
 
-
+console.log("hier bin ich");
 
 /* =====================================================
    ❌ Modal schließen
 ===================================================== */
 function tryCloseProduktionModal() {
-    if (hasUnsavedProduktionChanges()) {
-        confirmProduktionClose();
-    } else {
-        produktionModal.hidden = true;
-        document.body.style.overflow = "";
-    }
+	if (hasUnsavedProduktionChanges()) {
+		confirmProduktionClose();
+	} else {
+		produktionModal.hidden = true;
+		document.body.style.overflow = "";
+	}
 }
 
-
-
 produktionClose?.addEventListener("click", () => {
-    if (hasUnsavedProduktionChanges()) {
-        confirmProduktionClose();
-    } else {
-        produktionModal.hidden = true;
-        document.body.style.overflow = "";
-    }
+	if (hasUnsavedProduktionChanges()) {
+		confirmProduktionClose();
+	} else {
+		produktionModal.hidden = true;
+		document.body.style.overflow = "";
+	}
 });
 
 produktionBackdrop?.addEventListener("click", () => {
-    if (hasUnsavedProduktionChanges()) {
-        confirmProduktionClose();
-    } else {
-        produktionModal.hidden = true;
-        document.body.style.overflow = "";
-    }
+	if (hasUnsavedProduktionChanges()) {
+		confirmProduktionClose();
+	} else {
+		produktionModal.hidden = true;
+		document.body.style.overflow = "";
+	}
 });
 
 // Abbrechen-Button
 produktionBody
-    .querySelector("#cancel-produktion")
-    ?.addEventListener("click", tryCloseProduktionModal);
+	.querySelector("#cancel-produktion")
+	?.addEventListener("click", tryCloseProduktionModal);

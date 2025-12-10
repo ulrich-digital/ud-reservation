@@ -540,3 +540,13 @@ justify-content: flex-end;
 	}
 }
 
+
+
+tr.intern{
+td.td-lieferung,
+td.td-retouren,
+td.td-verkauf button {
+opacity: 0;
+pointer-events: none;
+}
+}

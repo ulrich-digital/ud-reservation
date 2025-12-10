@@ -466,3 +466,10 @@ label.ud-checkbox input[type=checkbox] {
   background: var(--wp--preset--color--theme-600);
   border-color: var(--wp--preset--color--theme-600);
 }
+
+tr.intern td.td-lieferung,
+tr.intern td.td-retouren,
+tr.intern td.td-verkauf button {
+  opacity: 0;
+  pointer-events: none;
+}
